@@ -1,13 +1,15 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simulateur — Storage Optimizer</title>
+  <title>Simulator — Storage Optimizer</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="js/geometry.js" defer></script>
   <script src="js/data.js" defer></script>
   <script src="js/packing.js" defer></script>
+  <script src="js/i18n.js" defer></script>
+  <script src="js/sync.js" defer></script>
   <script src="js/app.js" defer></script>
   <script src="assets/vendor/three.min.js"></script>
   <script src="js/viewer3d.js" defer></script>
@@ -18,87 +20,87 @@
   <main class="container">
     <div class="page-head">
       <div>
-        <div class="eyebrow">Simulateur 3D</div>
-        <h1>Optimiser le rangement</h1>
-        <p>Renseignez l'espace disponible, choisissez ce que vous voulez ranger, puis lancez le calcul. Le résultat est affiché en 3D : faites glisser pour tourner, molette pour zoomer, cliquez sur un objet pour l'identifier.</p>
+        <div class="eyebrow" data-i18n="sim.eyebrow">3D simulator</div>
+        <h1 data-i18n="sim.title">Optimise your storage</h1>
+        <p data-i18n="sim.desc">Set the available space, choose what to store, then run the calculation. The result is shown in 3D: drag to rotate, scroll to zoom, click an item for details.</p>
       </div>
     </div>
 
     <div class="sim-layout">
       <aside class="sim-side">
         <section class="card">
-          <div class="card-head"><h2>1. Espace disponible</h2></div>
+          <div class="card-head"><h2 data-i18n="sim.step1">1. Available space</h2></div>
           <div class="form-row">
-            <div class="field"><label for="space-length">Longueur</label><input id="space-length" type="number" min="1" step="1" value="300"></div>
-            <div class="field"><label for="space-width">Largeur</label><input id="space-width" type="number" min="1" step="1" value="200"></div>
-            <div class="field"><label for="space-height">Hauteur</label><input id="space-height" type="number" min="1" step="1" value="250"></div>
+            <div class="field"><label for="space-length" data-i18n="sim.length">Length</label><input id="space-length" type="number" min="1" step="1" value="300"></div>
+            <div class="field"><label for="space-width" data-i18n="sim.width">Width</label><input id="space-width" type="number" min="1" step="1" value="200"></div>
+            <div class="field"><label for="space-height" data-i18n="sim.height">Height</label><input id="space-height" type="number" min="1" step="1" value="250"></div>
           </div>
-          <div class="field" style="margin-top:12px"><label for="space-unit">Unité</label>
-            <select id="space-unit"><option value="m">Mètres (m)</option><option value="cm" selected>Centimètres (cm)</option><option value="mm">Millimètres (mm)</option></select>
+          <div class="field" style="margin-top:12px"><label for="space-unit" data-i18n="sim.unit">Unit</label>
+            <select id="space-unit"><option value="m">Metres (m)</option><option value="cm" selected>Centimetres (cm)</option><option value="mm">Millimetres (mm)</option></select>
           </div>
           <p class="field-hint" id="space-summary" style="margin-top:10px">300 × 200 × 250 cm · 15 m³</p>
         </section>
 
         <section class="card">
-          <div class="card-head"><h2>2. Que ranger ?</h2></div>
+          <div class="card-head"><h2 data-i18n="sim.step2">2. What to store?</h2></div>
           <div class="field">
-            <label>Mode de calcul</label>
+            <label data-i18n="sim.mode">Packing mode</label>
             <select id="mode">
-              <option value="space">Objets directement dans l'espace</option>
-              <option value="cartons">Objets dans des cartons, puis dans l'espace</option>
+              <option value="space" data-i18n="sim.mode.space">Items directly in the space</option>
+              <option value="cartons" data-i18n="sim.mode.boxes">Items into boxes, then boxes into the space</option>
             </select>
           </div>
-          <div class="field" style="margin-top:14px"><label>Objets à inclure</label><div class="check-list" id="object-list"></div></div>
-          <div class="field" id="carton-field" style="margin-top:14px" hidden><label>Cartons utilisables</label><div class="check-list" id="carton-list"></div></div>
+          <div class="field" style="margin-top:14px"><label data-i18n="sim.itemsToInclude">Items to include</label><div class="check-list" id="object-list"></div></div>
+          <div class="field" id="carton-field" style="margin-top:14px" hidden><label data-i18n="sim.boxesToUse">Usable boxes</label><div class="check-list" id="carton-list"></div></div>
           <div class="actions" style="margin-top:12px">
-            <button class="btn btn-sm btn-ghost" id="select-all" type="button">Tout sélectionner</button>
-            <button class="btn btn-sm btn-ghost" id="select-none" type="button">Tout désélectionner</button>
+            <button class="btn btn-sm btn-ghost" id="select-all" type="button" data-i18n="sim.selectAll">Select all</button>
+            <button class="btn btn-sm btn-ghost" id="select-none" type="button" data-i18n="sim.selectNone">Select none</button>
           </div>
         </section>
 
         <section class="card">
-          <div class="card-head"><h2>3. Options</h2></div>
-          <label class="toggle"><input type="checkbox" id="rotations" checked> Autoriser les rotations des objets</label>
+          <div class="card-head"><h2 data-i18n="sim.step3">3. Options</h2></div>
+          <label class="toggle"><input type="checkbox" id="rotations" checked> <span data-i18n="sim.rotations">Allow item rotations</span></label>
           <div class="field" style="margin-top:16px">
-            <label for="attempts">Nombre d'essais : <strong id="attempts-value">12</strong></label>
+            <label for="attempts" id="attempts-label">Attempts: 12</label>
             <div class="range-row"><input id="attempts" type="range" min="1" max="40" value="12"></div>
-            <span class="field-hint">Plus il y a d'essais, plus le résultat peut être compact (calcul un peu plus long).</span>
+            <span class="field-hint" data-i18n="sim.attemptsHint">More attempts can produce a more compact layout (slightly longer calculation).</span>
           </div>
-          <button class="btn btn-primary" id="btn-optimize" type="button" style="width:100%;margin-top:20px">⚡ Optimiser</button>
+          <button class="btn btn-primary" id="btn-optimize" type="button" style="width:100%;margin-top:20px">⚡ <span data-i18n="sim.optimize">Optimise</span></button>
         </section>
       </aside>
 
       <section class="card">
-        <div class="card-head"><h2>Résultat</h2><span class="card-sub" id="result-meta">En attente d'un calcul</span></div>
+        <div class="card-head"><h2 data-i18n="sim.result">Result</h2><span class="card-sub" id="result-meta" data-i18n="sim.pending">Pending calculation</span></div>
         <div class="result-banner idle" id="result-banner">
           <span class="rb-icon">🧊</span>
-          <div><strong>Prêt à calculer</strong><small>Renseignez l'espace et lancez l'optimisation pour voir la disposition 3D.</small></div>
+          <div><strong data-i18n="sim.idle.title">Ready to calculate</strong><small data-i18n="sim.idle.sub">Set the space and run the optimisation to see the 3D layout.</small></div>
         </div>
 
         <div class="kpis" id="kpis" hidden>
-          <div class="kpi"><div class="kpi-value" id="kpi-placed">—</div><div class="kpi-label" id="kpi-placed-label">Objets placés</div></div>
-          <div class="kpi"><div class="kpi-value" id="kpi-fill">—</div><div class="kpi-label">Remplissage</div><div class="progress"><div id="fill-bar" style="width:0%"></div></div></div>
-          <div class="kpi"><div class="kpi-value" id="kpi-height">—</div><div class="kpi-label">Hauteur utilisée</div></div>
-          <div class="kpi"><div class="kpi-value" id="kpi-time">—</div><div class="kpi-label">Temps de calcul</div></div>
+          <div class="kpi"><div class="kpi-value" id="kpi-placed">—</div><div class="kpi-label" id="kpi-placed-label" data-i18n="sim.kpi.placedItems">Items placed</div></div>
+          <div class="kpi"><div class="kpi-value" id="kpi-fill">—</div><div class="kpi-label" data-i18n="sim.kpi.fill">Fill rate</div><div class="progress"><div id="fill-bar" style="width:0%"></div></div></div>
+          <div class="kpi"><div class="kpi-value" id="kpi-height">—</div><div class="kpi-label" data-i18n="sim.kpi.usedHeight">Used height</div></div>
+          <div class="kpi"><div class="kpi-value" id="kpi-time">—</div><div class="kpi-label" data-i18n="sim.kpi.time">Compute time</div></div>
         </div>
 
         <div class="viewer-shell">
           <div id="viewer"></div>
           <div class="viewer-toolbar">
-            <button class="btn btn-sm" id="btn-reset-camera" type="button">⟲ Caméra</button>
-            <button class="btn btn-sm" id="btn-toggle-cartons" type="button" hidden>📮 Cartons</button>
-            <button class="btn btn-sm" id="btn-toggle-space" type="button">◻ Contour</button>
+            <button class="btn btn-sm" id="btn-reset-camera" type="button">⟲ <span data-i18n="sim.resetCamera">Camera</span></button>
+            <button class="btn btn-sm" id="btn-toggle-cartons" type="button" hidden>📮 <span data-i18n="sim.boxesToggle">Boxes</span></button>
+            <button class="btn btn-sm" id="btn-toggle-space" type="button">◻ <span data-i18n="sim.outline">Outline</span></button>
           </div>
           <div class="viewer-label" id="viewer-label"></div>
-          <div class="viewer-legend">Glisser : rotation · Molette : zoom · Clic : informations</div>
-          <div class="viewer-placeholder" id="viewer-placeholder"><div><div class="vp-icon">🧊</div>La visualisation apparaîtra ici après optimisation.</div></div>
+          <div class="viewer-legend" data-i18n="sim.legend">Drag: rotate · Scroll: zoom · Click: details</div>
+          <div class="viewer-placeholder" id="viewer-placeholder"><div><div class="vp-icon">🧊</div><span data-i18n="sim.placeholder">The 3D view will appear here after optimisation.</span></div></div>
         </div>
 
         <div id="unplaced-block" style="margin-top:18px" hidden>
-          <h3 style="font-size:.95rem;color:#991b1b">Objets non placés</h3>
+          <h3 style="font-size:.95rem;color:#991b1b" data-i18n="sim.unplaced">Items not placed</h3>
           <ul class="unplaced-list" id="unplaced-list"></ul>
         </div>
-        <p class="hint-line" id="hint-line">Astuce : essayez d'autoriser les rotations ou d'augmenter le nombre d'essais si certains objets restent dehors.</p>
+        <p class="hint-line" data-i18n="sim.hint">Tip: allow rotations or increase the attempts if some items are left out.</p>
       </section>
     </div>
   </main>

@@ -1,5 +1,1 @@
-[
-  { "id": "carton-standard", "name": "Carton standard", "type": "box", "dimensions": { "length": 60, "width": 40, "height": 40 }, "unit": "cm", "quantity": 20, "color": "#d97706", "contents": [] },
-  { "id": "carton-renforce", "name": "Carton renforcé", "type": "box", "dimensions": { "length": 50, "width": 40, "height": 50 }, "unit": "cm", "quantity": 10, "color": "#b45309", "contents": [] },
-  { "id": "carton-livres-type", "name": "Carton à livres", "type": "box", "dimensions": { "length": 32, "width": 27, "height": 30 }, "unit": "cm", "quantity": 15, "color": "#92400e", "contents": [] }
-]
+[]

@@ -1,91 +1,105 @@
-/* objects.js — gestion de la liste d'objets */
+/* objects.js — item list management */
 (function (root) {
   'use strict';
   const SO = root.SO;
   const data = SO.data, ui = SO.ui, geom = SO;
+  const t = (key, vars) => SO.i18n.t(key, vars);
   let query = '';
 
-  const rotationsLabel = { allowed: 'Toutes', upright: 'Debout seul.', none: 'Aucune' };
+  const rotationsLabel = { allowed: 'common.all', upright: 'common.upright', none: 'common.none' };
   const rotationsBadge = { allowed: 'badge-blue', upright: 'badge-amber', none: '' };
+
+  function dimLabel(key) {
+    return key === 'diameter' ? t('common.diameter') : t('common.' + key);
+  }
+
+  function estimatedBadge(item) {
+    if (!item.estimated || !item.estimated.length) return '';
+    return ` <span class="badge badge-amber" title="${ui.escapeHtml(item.estimated.map(dimLabel).join(', '))}">≈ ${ui.escapeHtml(t('common.estimated'))}</span>`;
+  }
 
   function render() {
     const all = data.loadObjects();
-    const q = query.trim().toLocaleLowerCase('fr');
-    const items = all.filter(o => !q || String(o.name).toLocaleLowerCase('fr').includes(q));
+    const q = query.trim().toLocaleLowerCase();
+    const items = all.filter(o => !q || String(o.name).toLocaleLowerCase().includes(q));
     const body = ui.el('objects-body');
     body.innerHTML = items.map(o => {
-      const volume = geom.volume(geom.normalizeItem(o).size);
-      const qty = Number(o.quantity) || 1;
+      const norm = geom.normalizeItem(o);
+      const qty = norm.quantity;
       return `<tr>
         <td><div class="row-name"><span class="swatch" style="background:${ui.escapeHtml(o.color || '#94a3b8')}"></span> ${ui.escapeHtml(o.name)}</div><div class="row-sub">${ui.escapeHtml(o.id)}</div></td>
-        <td><span class="badge">${o.type === 'cylinder' ? 'Cylindre' : 'Boîte'}</span></td>
-        <td>${ui.escapeHtml(ui.dimensionsText(o.dimensions, o.unit))}</td>
-        <td>${ui.formatVolume(volume)}${qty > 1 ? `<div class="row-sub">× ${qty} = ${ui.formatVolume(volume * qty)}</div>` : ''}</td>
-        <td><span class="badge ${rotationsBadge[o.rotations] || ''}">${rotationsLabel[o.rotations] || 'Toutes'}</span></td>
+        <td><span class="badge">${ui.escapeHtml(t(o.type === 'cylinder' ? 'common.cylinder' : 'common.box'))}</span></td>
+        <td>${ui.escapeHtml(ui.dimensionsText(o.dimensions, o.unit))}${estimatedBadge(o)}</td>
+        <td>${ui.formatVolume(geom.volume(norm.size))}${qty > 1 ? `<div class="row-sub">× ${qty} = ${ui.formatVolume(geom.volume(norm.size) * qty)}</div>` : ''}</td>
+        <td><span class="badge ${rotationsBadge[o.rotations] || ''}">${ui.escapeHtml(t(rotationsLabel[o.rotations] || 'common.all'))}</span></td>
         <td>${qty}</td>
         <td><div class="row-actions">
-          <button class="btn btn-sm btn-ghost" data-edit="${ui.escapeHtml(o.id)}" type="button">✎</button>
-          <button class="btn btn-sm btn-ghost" data-delete="${ui.escapeHtml(o.id)}" type="button">🗑</button>
+          <button class="btn btn-sm btn-ghost" data-edit="${ui.escapeHtml(o.id)}" type="button" title="${ui.escapeHtml(t('common.edit'))}">✎</button>
+          <button class="btn btn-sm btn-ghost" data-delete="${ui.escapeHtml(o.id)}" type="button" title="${ui.escapeHtml(t('common.delete'))}">🗑</button>
         </div></td>
       </tr>`;
     }).join('');
     ui.el('objects-empty').hidden = items.length > 0;
-    ui.el('count-badge').textContent = `${items.length} objet${items.length > 1 ? 's' : ''}`;
+    ui.el('count-badge').textContent = t('objects.count', { n: items.length });
 
     body.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => {
       openForm(all.find(o => o.id === btn.dataset.edit));
     }));
     body.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', async () => {
       const obj = all.find(o => o.id === btn.dataset.delete);
-      if (!obj || !await ui.confirm(`Supprimer « ${obj.name} » ?`, 'Supprimer un objet')) return;
+      if (!obj || !await ui.confirm(t('objects.deleteConfirm', { name: obj.name }), t('objects.deleteTitle'))) return;
       data.saveObjects(data.loadObjects().filter(o => o.id !== obj.id));
-      ui.toast('Objet supprimé.', 'success');
+      ui.toast(t('objects.deleted'), 'success');
     }));
   }
 
   function formHtml(item) {
     const o = item || {
       id: '', name: '', type: 'box', unit: 'cm', rotations: 'allowed',
-      quantity: 1, color: '#3b82f6',
-      dimensions: { length: '', width: '', height: '', diameter: '', height: '' }
+      quantity: 1, color: '#3b82f6', estimated: [],
+      dimensions: { length: '', width: '', height: '' }
     };
+    const estimated = o.estimated || [];
     const v = (obj, key) => ui.escapeHtml(obj[key] == null ? '' : obj[key]);
+    const d = o.dimensions || {};
+    const mark = key => estimated.includes(key) ? ' ≈' : '';
     const isCylinder = o.type === 'cylinder';
     return `
       <div class="form-row">
-        <div class="field" style="grid-column:span 2"><label for="f-name">Nom *</label><input id="f-name" value="${v(o, 'name')}" placeholder="Ex. Table à manger" required></div>
-        <div class="field"><label for="f-quantity">Quantité</label><input id="f-quantity" type="number" min="1" step="1" value="${v(o, 'quantity') || 1}"></div>
+        <div class="field" style="grid-column:span 2"><label for="f-name">${ui.escapeHtml(t('common.name'))} *</label><input id="f-name" value="${v(o, 'name')}" required></div>
+        <div class="field"><label for="f-quantity">${ui.escapeHtml(t('common.quantity'))}</label><input id="f-quantity" type="number" min="1" step="1" value="${v(o, 'quantity') || 1}"></div>
       </div>
       <div class="form-row" style="margin-top:14px">
-        <div class="field"><label for="f-type">Forme</label><select id="f-type">
-          <option value="box" ${!isCylinder ? 'selected' : ''}>Boîte (L × l × H)</option>
-          <option value="cylinder" ${isCylinder ? 'selected' : ''}>Cylindre (Ø × H)</option>
+        <div class="field"><label for="f-type">${ui.escapeHtml(t('common.shape'))}</label><select id="f-type">
+          <option value="box" ${!isCylinder ? 'selected' : ''}>${ui.escapeHtml(t('common.box'))} (L × W × H)</option>
+          <option value="cylinder" ${isCylinder ? 'selected' : ''}>${ui.escapeHtml(t('common.cylinder'))} (Ø × H)</option>
         </select></div>
-        <div class="field"><label for="f-unit">Unité</label><select id="f-unit">
+        <div class="field"><label for="f-unit">${ui.escapeHtml(t('common.unit'))}</label><select id="f-unit">
           ${geom.units.map(u => `<option value="${u}" ${o.unit === u ? 'selected' : ''}>${u}</option>`).join('')}
         </select></div>
-        <div class="field"><label for="f-rotations">Rotations</label><select id="f-rotations">
-          <option value="allowed" ${o.rotations === 'allowed' ? 'selected' : ''}>Toutes autorisées</option>
-          <option value="upright" ${o.rotations === 'upright' ? 'selected' : ''}>Debout uniquement</option>
-          <option value="none" ${o.rotations === 'none' ? 'selected' : ''}>Aucune</option>
+        <div class="field"><label for="f-rotations">${ui.escapeHtml(t('common.rotations'))}</label><select id="f-rotations">
+          <option value="allowed" ${o.rotations === 'allowed' ? 'selected' : ''}>${ui.escapeHtml(t('common.all'))}</option>
+          <option value="upright" ${o.rotations === 'upright' ? 'selected' : ''}>${ui.escapeHtml(t('common.upright'))}</option>
+          <option value="none" ${o.rotations === 'none' ? 'selected' : ''}>${ui.escapeHtml(t('common.none'))}</option>
         </select></div>
       </div>
       <div class="form-row" style="margin-top:14px">
-        <div class="field dim-box" ${isCylinder ? 'hidden' : ''}><label for="f-length">Longueur *</label><input id="f-length" type="number" min="0.1" step="any" value="${ui.escapeHtml((o.dimensions || {}).length == null ? '' : o.dimensions.length)}"></div>
-        <div class="field dim-box" ${isCylinder ? 'hidden' : ''}><label for="f-width">Largeur *</label><input id="f-width" type="number" min="0.1" step="any" value="${ui.escapeHtml((o.dimensions || {}).width == null ? '' : o.dimensions.width)}"></div>
-        <div class="field dim-box" ${isCylinder ? 'hidden' : ''}><label for="f-height">Hauteur *</label><input id="f-height" type="number" min="0.1" step="any" value="${ui.escapeHtml((o.dimensions || {}).height == null ? '' : o.dimensions.height)}"></div>
-        <div class="field dim-cyl" ${!isCylinder ? 'hidden' : ''}><label for="f-diameter">Diamètre *</label><input id="f-diameter" type="number" min="0.1" step="any" value="${ui.escapeHtml((o.dimensions || {}).diameter == null ? '' : o.dimensions.diameter)}"></div>
-        <div class="field dim-cyl" ${!isCylinder ? 'hidden' : ''}><label for="f-cyl-height">Hauteur *</label><input id="f-cyl-height" type="number" min="0.1" step="any" value="${ui.escapeHtml((o.dimensions || {}).height == null ? '' : o.dimensions.height)}"></div>
+        <div class="field dim-box" ${isCylinder ? 'hidden' : ''}><label for="f-length">${ui.escapeHtml(t('common.length'))} *${mark('length')}</label><input id="f-length" type="number" min="0" step="any" value="${ui.escapeHtml(d.length == null ? '' : d.length)}"></div>
+        <div class="field dim-box" ${isCylinder ? 'hidden' : ''}><label for="f-width">${ui.escapeHtml(t('common.width'))} *${mark('width')}</label><input id="f-width" type="number" min="0" step="any" value="${ui.escapeHtml(d.width == null ? '' : d.width)}"></div>
+        <div class="field dim-box" ${isCylinder ? 'hidden' : ''}><label for="f-height">${ui.escapeHtml(t('common.height'))} *${mark('height')}</label><input id="f-height" type="number" min="0" step="any" value="${ui.escapeHtml(d.height == null ? '' : d.height)}"></div>
+        <div class="field dim-cyl" ${!isCylinder ? 'hidden' : ''}><label for="f-diameter">${ui.escapeHtml(t('common.diameter'))} *${mark('diameter')}</label><input id="f-diameter" type="number" min="0" step="any" value="${ui.escapeHtml(d.diameter == null ? '' : d.diameter)}"></div>
+        <div class="field dim-cyl" ${!isCylinder ? 'hidden' : ''}><label for="f-cyl-height">${ui.escapeHtml(t('common.height'))} *${mark('height')}</label><input id="f-cyl-height" type="number" min="0" step="any" value="${ui.escapeHtml(d.height == null ? '' : d.height)}"></div>
       </div>
-      <div class="field" style="margin-top:14px;max-width:200px"><label for="f-color">Couleur dans la scène 3D</label><input id="f-color" type="color" value="${ui.escapeHtml(o.color || '#3b82f6')}" style="padding:4px;height:42px"></div>
-      <p class="field-hint" style="margin-top:12px">Un cylindre est approché par sa boîte englobante (diamètre × diamètre × hauteur) lors du calcul de placement.</p>`;
+      <div class="field" style="margin-top:14px;max-width:200px"><label for="f-color">${ui.escapeHtml(t('common.color'))}</label><input id="f-color" type="color" value="${ui.escapeHtml(o.color || '#3b82f6')}" style="padding:4px;height:42px"></div>
+      <p class="field-hint" style="margin-top:12px">≈ = ${ui.escapeHtml(t('objects.form.estimatedHint'))}</p>
+      <p class="field-hint">${ui.escapeHtml(t('objects.form.cylinderHint'))}</p>`;
   }
 
   function openForm(item) {
     const editing = !!item;
-    const modal = ui.openModal(editing ? 'Modifier l’objet' : 'Nouvel objet', formHtml(item), `
-      <button class="btn btn-ghost" data-modal-close type="button">Annuler</button>
-      <button class="btn btn-primary" data-save type="button">Enregistrer</button>`);
+    const modal = ui.openModal(t(editing ? 'objects.form.edit' : 'objects.form.new'), formHtml(item), `
+      <button class="btn btn-ghost" data-modal-close type="button">${ui.escapeHtml(t('common.cancel'))}</button>
+      <button class="btn btn-primary" data-save type="button">${ui.escapeHtml(t('common.save'))}</button>`);
 
     const typeSel = modal.querySelector('#f-type');
     const toggleDims = () => {
@@ -99,20 +113,20 @@
     modal.querySelector('[data-save]').addEventListener('click', () => {
       const val = id => modal.querySelector('#' + id).value;
       const type = typeSel.value;
-      const dimensions = type === 'cylinder'
-        ? { diameter: Number(val('f-diameter')), height: Number(val('f-cyl-height')) }
-        : { length: Number(val('f-length')), width: Number(val('f-width')), height: Number(val('f-height')) };
-      const obj = {
-        id: editing ? item.id : data.newId('objet'),
-        name: val('f-name').trim(),
-        type, dimensions,
-        unit: val('f-unit'),
-        rotations: val('f-rotations'),
+      const rawDimensions = type === 'cylinder'
+        ? { diameter: val('f-diameter'), height: val('f-cyl-height') }
+        : { length: val('f-length'), width: val('f-width'), height: val('f-height') };
+      const candidate = {
+        id: editing ? item.id : data.newId('item'),
+        name: val('f-name').trim(), type, dimensions: rawDimensions,
+        unit: val('f-unit'), rotations: val('f-rotations'),
         quantity: Math.max(1, Math.floor(Number(val('f-quantity')) || 1)),
         color: val('f-color')
       };
-      const errors = geom.validateObject(obj);
-      if (errors.length) { ui.toast(errors.join(' '), 'error'); return; }
+      const errors = geom.validateObject(candidate);
+      if (errors.length) { ui.toast(errors.map(e => SO.i18n.t(e)).join(' '), 'error'); return; }
+      const resolved = geom.resolveDimensions(rawDimensions, type);
+      const obj = Object.assign({}, candidate, { dimensions: resolved.values, estimated: resolved.estimated });
       const list = data.loadObjects();
       if (editing) {
         const i = list.findIndex(o => o.id === item.id);
@@ -120,7 +134,10 @@
       } else list.push(obj);
       data.saveObjects(list);
       ui.closeModal();
-      ui.toast(editing ? 'Objet mis à jour.' : 'Objet ajouté.', 'success');
+      ui.toast(t(editing ? 'objects.updated' : 'objects.added'), 'success');
+      resolved.estimated.forEach(key => {
+        ui.toast(SO.i18n.t('objects.estimatedToast', { dim: dimLabel(key), value: resolved.values[key], unit: obj.unit }), 'warning');
+      });
       render();
     });
   }
@@ -129,6 +146,7 @@
     ui.el('btn-add').addEventListener('click', () => openForm(null));
     ui.el('search').addEventListener('input', e => { query = e.target.value; render(); });
     window.addEventListener('so:data-changed', render);
+    window.addEventListener('so:lang-changed', render);
     render();
   });
 })(typeof globalThis !== 'undefined' ? globalThis : this);

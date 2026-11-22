@@ -1,5 +1,5 @@
 /*
- * data.js — dépôt de données (localStorage, import/export JSON, amorçage depuis data/*.json)
+ * data.js — data repository (localStorage, JSON import/export, seeding from data/*.json)
  */
 (function (root, factory) {
   const geom = (typeof module === 'object' && module.exports)
@@ -10,28 +10,12 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (geom) {
   'use strict';
 
-  const KEYS = { objects: 'so.objects.v1', containers: 'so.containers.v1', settings: 'so.settings.v1' };
+  // v2: starting fresh — old V1 seeded data (25 items / 45 boxes) is deliberately ignored.
+  const KEYS = { objects: 'so.objects.v2', containers: 'so.containers.v2', settings: 'so.settings.v2' };
 
-  const DEFAULT_OBJECTS = [
-    { id: 'table-001', name: 'Table à manger', type: 'box', dimensions: { length: 180, width: 80, height: 75 }, unit: 'cm', rotations: 'allowed', quantity: 1, color: '#3b82f6' },
-    { id: 'canape-001', name: 'Canapé', type: 'box', dimensions: { length: 220, width: 95, height: 85 }, unit: 'cm', rotations: 'allowed', quantity: 1, color: '#8b5cf6' },
-    { id: 'lit-001', name: 'Lit double', type: 'box', dimensions: { length: 200, width: 160, height: 50 }, unit: 'cm', rotations: 'allowed', quantity: 1, color: '#ec4899' },
-    { id: 'armoire-001', name: 'Armoire', type: 'box', dimensions: { length: 120, width: 60, height: 200 }, unit: 'cm', rotations: 'none', quantity: 1, color: '#f97316' },
-    { id: 'frigo-001', name: 'Réfrigérateur', type: 'box', dimensions: { length: 70, width: 70, height: 180 }, unit: 'cm', rotations: 'none', quantity: 1, color: '#14b8a6' },
-    { id: 'lave-linge-001', name: 'Lave-linge', type: 'box', dimensions: { length: 60, width: 60, height: 85 }, unit: 'cm', rotations: 'none', quantity: 1, color: '#0ea5e9' },
-    { id: 'bureau-001', name: 'Bureau', type: 'box', dimensions: { length: 140, width: 70, height: 75 }, unit: 'cm', rotations: 'allowed', quantity: 1, color: '#6366f1' },
-    { id: 'chaise-001', name: 'Chaise', type: 'box', dimensions: { length: 45, width: 50, height: 90 }, unit: 'cm', rotations: 'allowed', quantity: 4, color: '#eab308' },
-    { id: 'carton-livres', name: 'Carton de livres', type: 'box', dimensions: { length: 40, width: 30, height: 30 }, unit: 'cm', rotations: 'allowed', quantity: 8, color: '#a16207' },
-    { id: 'carton-vaisselle', name: 'Carton de vaisselle', type: 'box', dimensions: { length: 50, width: 40, height: 40 }, unit: 'cm', rotations: 'allowed', quantity: 4, color: '#d97706' },
-    { id: 'lampe-001', name: 'Lampadaire', type: 'cylinder', dimensions: { diameter: 35, height: 160 }, unit: 'cm', rotations: 'upright', quantity: 1, color: '#facc15' },
-    { id: 'plante-001', name: 'Grande plante', type: 'cylinder', dimensions: { diameter: 50, height: 120 }, unit: 'cm', rotations: 'upright', quantity: 1, color: '#22c55e' }
-  ];
-
-  const DEFAULT_CONTAINERS = [
-    { id: 'carton-standard', name: 'Carton standard', type: 'box', dimensions: { length: 60, width: 40, height: 40 }, unit: 'cm', quantity: 20, color: '#d97706', contents: [] },
-    { id: 'carton-renforce', name: 'Carton renforcé', type: 'box', dimensions: { length: 50, width: 40, height: 50 }, unit: 'cm', quantity: 10, color: '#b45309', contents: [] },
-    { id: 'carton-livres-type', name: 'Carton à livres', type: 'box', dimensions: { length: 32, width: 27, height: 30 }, unit: 'cm', quantity: 15, color: '#92400e', contents: [] }
-  ];
+  // No starter data: the application starts with empty lists.
+  const DEFAULT_OBJECTS = [];
+  const DEFAULT_CONTAINERS = [];
 
   const DEFAULT_SETTINGS = {
     space: { length: 300, width: 200, height: 250, unit: 'cm' },
@@ -49,7 +33,7 @@
         localStorage.removeItem('__so_probe');
         return localStorage;
       }
-    } catch (e) { /* file:// ou Node : stockage mémoire */ }
+    } catch (e) { /* file:// or Node: in-memory storage */ }
     const mem = new Map();
     return {
       getItem: k => (mem.has(k) ? mem.get(k) : null),
@@ -96,8 +80,10 @@
 
   function totalVolume(items) {
     return items.reduce((sum, raw) => {
-      try { return sum + geom.volume(geom.normalizeItem(raw).size) * Math.max(1, Number(raw.quantity) || 1); }
-      catch (e) { return sum; }
+      try {
+        const norm = geom.normalizeItem(raw);
+        return sum + geom.volume(norm.size) * norm.quantity;
+      } catch (e) { return sum; }
     }, 0);
   }
 
@@ -112,25 +98,29 @@
   function importJSON(text) {
     let parsed;
     try { parsed = JSON.parse(text); }
-    catch (e) { throw new Error('Le fichier n’est pas un JSON valide.'); }
+    catch (e) { throw new Error('error.invalidJson'); }
     const objects = parsed.objects || (Array.isArray(parsed) ? parsed : null);
     const containers = parsed.containers || [];
-    if (!Array.isArray(objects)) throw new Error('Clé "objects" absente ou invalide.');
-    if (!Array.isArray(containers)) throw new Error('Clé "containers" absente ou invalide.');
-    for (const obj of objects) {
+    if (!Array.isArray(objects)) throw new Error('error.missingObjects');
+    if (!Array.isArray(containers)) throw new Error('error.missingContainers');
+    const normalizedObjects = objects.map(obj => {
       const errors = geom.validateObject(obj);
-      if (errors.length) throw new Error(`${obj.name || 'Objet'} : ${errors.join(' ')}`);
-    }
-    for (const c of containers) {
+      if (errors.length) throw new Error(`${obj.name || 'Item'} : ${errors.join(', ')}`);
+      const resolved = geom.resolveDimensions(obj.dimensions, obj.type === 'cylinder' ? 'cylinder' : 'box');
+      return Object.assign({}, obj, { dimensions: resolved.values, estimated: resolved.estimated });
+    });
+    const normalizedContainers = containers.map(c => {
       const errors = geom.validateObject(Object.assign({}, c, { type: 'box' }));
-      if (errors.length) throw new Error(`${c.name || 'Carton'} : ${errors.join(' ')}`);
-    }
-    saveObjects(objects);
-    saveContainers(containers);
-    return { objects: objects.length, containers: containers.length };
+      if (errors.length) throw new Error(`${c.name || 'Box'} : ${errors.join(', ')}`);
+      const resolved = geom.resolveDimensions(c.dimensions, 'box');
+      return Object.assign({}, c, { dimensions: resolved.values, estimated: resolved.estimated });
+    });
+    saveObjects(normalizedObjects);
+    saveContainers(normalizedContainers);
+    return { objects: normalizedObjects.length, containers: normalizedContainers.length };
   }
 
-  /** Amorce depuis data/*..json si aucune donnée locale n'existe (serveur HTTP uniquement). */
+  /** Seed from data/*.json only when no local data exists (HTTP only). */
   async function ensureSeeded() {
     if (typeof fetch !== 'function' || typeof location === 'undefined' ||
         location.protocol === 'file:') return false;

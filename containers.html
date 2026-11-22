@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cartons — Storage Optimizer</title>
+  <title>Boxes — Storage Optimizer</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="js/geometry.js" defer></script>
   <script src="js/data.js" defer></script>
+  <script src="js/i18n.js" defer></script>
+  <script src="js/sync.js" defer></script>
   <script src="js/app.js" defer></script>
   <script src="js/containers.js" defer></script>
 </head>
@@ -15,35 +17,42 @@
   <main class="container">
     <div class="page-head">
       <div>
-        <div class="eyebrow">Base de données</div>
-        <h1>Cartons</h1>
-        <p>Définissez vos conteneurs et leur quantité. Le simulateur peut d'abord ranger les objets dans les cartons, puis placer les cartons dans l'espace disponible.</p>
+        <div class="eyebrow" data-i18n="containers.eyebrow">Database</div>
+        <h1 data-i18n="containers.title">Boxes</h1>
+        <p data-i18n="containers.desc">Define your boxes and how many you have. The simulator can first pack items into boxes, then place the boxes in the available space. Leave one dimension blank to estimate it as the smallest of the other two.</p>
       </div>
       <div class="actions">
-        <button class="btn btn-ghost" id="btn-import" type="button">⬆ Importer</button>
-        <button class="btn btn-ghost" id="btn-export" type="button">⬇ Exporter</button>
-        <button class="btn btn-ghost" id="btn-reset" type="button">↺ Réinitialiser</button>
-        <button class="btn btn-primary" id="btn-add" type="button">＋ Ajouter un carton</button>
+        <button class="btn btn-ghost" id="btn-import" type="button">⬆ <span data-i18n="common.import">Import</span></button>
+        <button class="btn btn-ghost" id="btn-export" type="button">⬇ <span data-i18n="common.export">Export</span></button>
+        <button class="btn btn-ghost" id="btn-reset" type="button">↺ <span data-i18n="common.reset">Reset data</span></button>
+        <button class="btn btn-primary" id="btn-add" type="button">＋ <span data-i18n="common.addContainer">Add box</span></button>
       </div>
     </div>
 
     <section class="card">
       <div class="toolbar">
-        <div class="search"><input id="search" class="input" type="search" placeholder="Rechercher un carton…" autocomplete="off"></div>
-        <span class="badge" id="count-badge">0 carton</span>
+        <div class="search"><input id="search" class="input" type="search" data-i18n-placeholder="common.search" placeholder="Search…" autocomplete="off"></div>
+        <span class="badge" id="count-badge">0 boxes</span>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Carton</th><th>Dimensions internes</th><th>Volume</th><th>Disponibles</th><th>Contenu déclaré</th><th style="text-align:right">Actions</th></tr></thead>
+          <thead><tr>
+            <th data-i18n="common.name">Name</th>
+            <th data-i18n="containers.internalDimensions">Internal dimensions</th>
+            <th data-i18n="common.volume">Volume</th>
+            <th data-i18n="common.available">Available</th>
+            <th data-i18n="common.declaredContents">Declared contents</th>
+            <th style="text-align:right" data-i18n="common.actions">Actions</th>
+          </tr></thead>
           <tbody id="containers-body"></tbody>
         </table>
       </div>
-      <div class="empty" id="containers-empty" hidden><div class="empty-icon">📮</div><p>Aucun carton pour le moment.</p></div>
+      <div class="empty" id="containers-empty" hidden><div class="empty-icon">📮</div><p data-i18n="containers.empty">No boxes yet. Add your first one.</p></div>
     </section>
 
     <div class="card">
-      <div class="card-head"><h2>À savoir</h2></div>
-      <p class="card-sub" style="margin:0">Le « contenu déclaré» est une indication : le simulateur cherche lui-même quels objets placer dans chaque carton (mode « Cartons »). La vérification « cet objet rentre-t-il ? » est disponible dans le formulaire de modification.</p>
+      <div class="card-head"><h2 data-i18n="containers.infoTitle">Good to know</h2></div>
+      <p class="card-sub" style="margin:0" data-i18n="containers.declaredHint">Declared contents are indicative: the simulator decides which items to pack into each box in “Boxes” mode.</p>
     </div>
   </main>
   <div id="modal-root"></div>

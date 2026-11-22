@@ -1,50 +1,72 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Application personnelle de gestion et d'optimisation 3D d'un espace de stockage.">
-  <title>Storage Optimizer — Accueil</title>
+  <meta name="description" content="Personal 3D storage optimiser for a move.">
+  <title>Storage Optimizer — Home</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="js/geometry.js" defer></script>
   <script src="js/data.js" defer></script>
+  <script src="js/i18n.js" defer></script>
+  <script src="js/sync.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
 <body>
   <div id="nav-mount"></div>
   <main class="container">
     <section class="hero">
-      <div class="eyebrow">Projet déménagement · version 1</div>
-      <h1>Rangez vos affaires avant de déménager, pas le jour J.</h1>
-      <p>Décrivez vos objets et vos cartons, définissez l'espace disponible, puis laissez l'algorithme trouver une disposition 3D réaliste qui tient compte des rotations et des collisions.</p>
+      <div class="eyebrow" data-i18n="home.eyebrow">Moving project · version 1</div>
+      <h1 data-i18n="home.title">Sort your belongings before moving day.</h1>
+      <p data-i18n="home.text">Describe your items and boxes, define the available space, and let the algorithm find a realistic 3D layout that respects rotations and collisions.</p>
     </section>
 
     <div class="stats">
-      <div class="card stat"><div class="stat-value" data-summary="objects">—</div><div class="stat-label">Objets à ranger</div></div>
-      <div class="card stat"><div class="stat-value" data-summary="containers">—</div><div class="stat-label">Cartons disponibles</div></div>
-      <div class="card stat"><div class="stat-value" data-summary="volume">—</div><div class="stat-label">Volume total des objets</div></div>
+      <div class="card stat"><div class="stat-value" data-summary="objects">—</div><div class="stat-label" data-i18n="home.summary.objects">Items to store</div></div>
+      <div class="card stat"><div class="stat-value" data-summary="containers">—</div><div class="stat-label" data-i18n="home.summary.containers">Boxes available</div></div>
+      <div class="card stat"><div class="stat-value" data-summary="volume">—</div><div class="stat-label" data-i18n="home.summary.volume">Total item volume</div></div>
     </div>
 
     <div class="quick-links">
-      <a class="quick-link" href="objects.html"><span class="ql-icon">📦</span><strong>Objets</strong><small>Ajouter, modifier, supprimer</small></a>
-      <a class="quick-link" href="containers.html"><span class="ql-icon">📮</span><strong>Cartons</strong><small>Dimensions et contenus</small></a>
-      <a class="quick-link" href="simulator.html"><span class="ql-icon">🧊</span><strong>Simulateur</strong><small>Optimiser et visualiser en 3D</small></a>
+      <a class="quick-link" href="objects.html"><span class="ql-icon">📦</span><strong data-i18n="home.quick.objects.title">Items</strong><small data-i18n="home.quick.objects.sub">Add, edit, remove</small></a>
+      <a class="quick-link" href="containers.html"><span class="ql-icon">📮</span><strong data-i18n="home.quick.containers.title">Boxes</strong><small data-i18n="home.quick.containers.sub">Sizes and contents</small></a>
+      <a class="quick-link" href="simulator.html"><span class="ql-icon">🧊</span><strong data-i18n="home.quick.simulator.title">Simulator</strong><small data-i18n="home.quick.simulator.sub">Optimise and preview in 3D</small></a>
     </div>
 
     <div class="grid grid-3" style="margin-top: 28px;">
-      <div class="card feature"><div class="feature-icon">📐</div><div><h3>Vraie géométrie 3D</h3><p>Les volumes seuls ne suffisent pas : chaque objet est placé selon ses trois dimensions, avec ses rotations autorisées.</p></div></div>
-      <div class="card feature"><div class="feature-icon">🚫</div><div><h3>Aucune collision</h3><p>Le placement vérifie les limites de l'espace et les chevauchements avec les objets déjà posés.</p></div></div>
-      <div class="card feature"><div class="feature-icon">🧠</div><div><h3>Heuristique rapide</h3><p>Plusieurs essais avec des ordres différents ; la meilleure disposition est conservée en quelques secondes.</p></div></div>
+      <div class="card feature"><div class="feature-icon">📐</div><div><h3 data-i18n="home.f1.title">Real 3D geometry</h3><p data-i18n="home.f1.text">Volumes alone are not enough: every item is placed using its three dimensions and allowed rotations.</p></div></div>
+      <div class="card feature"><div class="feature-icon">🚫</div><div><h3 data-i18n="home.f2.title">No collisions</h3><p data-i18n="home.f2.text">The placement checks the space limits and overlaps with items already placed.</p></div></div>
+      <div class="card feature"><div class="feature-icon">🧠</div><div><h3 data-i18n="home.f3.title">Fast heuristic</h3><p data-i18n="home.f3.text">Several attempts with different orders; the best layout is kept in a few seconds.</p></div></div>
     </div>
 
-    <div class="card" style="margin-top: 20px;">
-      <div class="card-head"><div><h2>Vos données</h2><div class="card-sub">Tout est stocké dans votre navigateur. Exportez un JSON pour le versionner sur GitHub.</div></div></div>
-      <div class="actions">
-        <button class="btn btn-ghost" id="btn-export" type="button">⬇ Exporter JSON</button>
-        <button class="btn btn-ghost" id="btn-import" type="button">⬆ Importer JSON</button>
-        <button class="btn btn-ghost" id="btn-reset" type="button">↺ Réinitialiser les exemples</button>
+    <section class="card sync-panel" id="sync-panel" style="margin-top:20px">
+      <div class="card-head">
+        <div><h2 data-i18n="sync.title">Sync across devices</h2><div class="card-sub" data-i18n="sync.desc">Store the data in a GitHub branch so every device sees the same list.</div></div>
+        <div class="sync-status" id="sync-status"><span class="sync-dot"></span><span id="sync-status-text">Local only</span></div>
       </div>
-      <p class="hint-line">Les fichiers <code>data/objects.json</code> et <code>data/containers.json</code> servent de jeu de données initial et peuvent être modifiés directement dans le dépôt.</p>
+      <div class="grid grid-3">
+        <div class="field"><label for="sync-owner" data-i18n="sync.owner">Repository owner</label><input id="sync-owner" value="vadimguignard" autocomplete="off"></div>
+        <div class="field"><label for="sync-repo" data-i18n="sync.repo">Repository name</label><input id="sync-repo" value="storage-optimizer" autocomplete="off"></div>
+        <div class="field"><label for="sync-branch" data-i18n="sync.branch">Data branch</label><input id="sync-branch" value="sync" autocomplete="off"></div>
+      </div>
+      <div class="field" style="margin-top:14px;max-width:520px"><label for="sync-token" data-i18n="sync.token">Access token</label><input id="sync-token" type="password" placeholder="ghp_… / github_pat_…" autocomplete="off"></div>
+      <div class="actions" style="margin-top:16px">
+        <button class="btn btn-primary" id="sync-enable" type="button" data-i18n="sync.enable">Enable sync</button>
+        <button class="btn btn-ghost" id="sync-now" type="button" data-i18n="sync.now">Sync now</button>
+        <button class="btn btn-ghost" id="sync-disable" type="button" data-i18n="sync.disable">Disable</button>
+      </div>
+      <div class="sync-note" data-i18n="sync.note">The token stays in this browser only. Use a fine-grained token with read/write access to the repository contents, and enter it once on each device.</div>
+      <p class="hint-line" id="sync-detail"></p>
+    </section>
+
+    <div class="card" style="margin-top: 20px;">
+      <div class="card-head"><div><h2 data-i18n="home.data.title">Your data</h2><div class="card-sub" data-i18n="home.data.sub">Everything is stored in your browser. Export a JSON file to version it on GitHub.</div></div></div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="btn-export" type="button">⬇ <span data-i18n="common.export">Export</span></button>
+        <button class="btn btn-ghost" id="btn-import" type="button">⬆ <span data-i18n="common.import">Import</span></button>
+        <button class="btn btn-ghost" id="btn-reset" type="button">↺ <span data-i18n="common.reset">Reset data</span></button>
+      </div>
+      <p class="hint-line" data-i18n="home.data.hint">The data/objects.json and data/containers.json files are the initial dataset (empty by default) and can be edited directly in the repository.</p>
     </div>
   </main>
   <div id="modal-root"></div>

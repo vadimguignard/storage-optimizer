@@ -16,6 +16,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
@@ -56,6 +57,10 @@ button, input, select, textarea { font: inherit; }
   color: #fff; font-size: 1.1rem;
 }
 .brand-accent { color: var(--primary); }
+.sync-badge { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); font-size: .95rem; text-decoration: none; }
+.sync-badge.online { background: #ecfdf5; border-color: #a7f3d0; color: var(--success); }
+.lang-switch { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--muted); font-weight: 650; }
+.lang-switch select { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; background: #fff; color: var(--text); cursor: pointer; }
 .nav { display: flex; gap: 4px; flex-wrap: wrap; }
 .nav-link {
   padding: 8px 14px; border-radius: 10px; color: var(--muted);
@@ -264,6 +269,17 @@ td .row-sub { color: var(--muted); font-size: .77rem; }
 .unplaced-list { margin: 0; padding-left: 18px; font-size: .86rem; color: #991b1b; }
 .unplaced-list li { margin-bottom: 4px; }
 .hint-line { font-size: .8rem; color: var(--muted); margin-top: 10px; }
+
+/* ---------- Sync ---------- */
+.sync-status { display: flex; align-items: center; gap: 8px; font-size: .85rem; font-weight: 650; flex-wrap: wrap; }
+.sync-dot { width: 9px; height: 9px; border-radius: 50%; background: #94a3b8; flex: none; }
+.sync-status.online .sync-dot { background: var(--success); box-shadow: 0 0 0 4px rgba(5,150,105,.12); }
+.sync-status.syncing .sync-dot { background: var(--warning); animation: pulse 1s infinite; }
+.sync-status.error .sync-dot { background: var(--danger); }
+@keyframes pulse { 50% { opacity: .35; } }
+.sync-time { color: var(--muted); font-weight: 500; }
+.sync-panel .field input[type=password] { font-family: inherit; }
+.sync-note { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 10px; padding: 11px 13px; font-size: .8rem; margin-top: 14px; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1050px) {

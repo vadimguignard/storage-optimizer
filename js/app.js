@@ -1,10 +1,12 @@
 /*
- * app.js — interface partagée : navigation, notifications, modales, formatage, import/export
+ * app.js — shared UI: navigation, language, toasts, modals, formatting, import/export
  */
 (function (root) {
   'use strict';
   const SO = root.SO = root.SO || {};
   const data = SO.data;
+  const t = (key, vars) => SO.i18n.t(key, vars);
+  const locale = () => SO.i18n.locale;
 
   function el(id) { return document.getElementById(id); }
 
@@ -15,7 +17,7 @@
   }
 
   function trimNumber(n, digits) {
-    return Number(n.toFixed(digits)).toString();
+    return Number(n.toFixed(digits)).toLocaleString(locale(), { maximumFractionDigits: digits });
   }
 
   function formatDim(cm) {
@@ -55,7 +57,7 @@
     rootEl.innerHTML = `
       <div class="modal-backdrop" data-modal-close>
         <div class="modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
-          <div class="modal-head"><h3>${escapeHtml(title)}</h3><button class="icon-btn" type="button" data-modal-close aria-label="Fermer">✕</button></div>
+          <div class="modal-head"><h3>${escapeHtml(title)}</h3><button class="icon-btn" type="button" data-modal-close aria-label="${escapeHtml(t('common.close'))}">✕</button></div>
           <div class="modal-body">${bodyHtml}</div>
           ${footerHtml ? `<div class="modal-foot">${footerHtml}</div>` : ''}
         </div>
@@ -84,15 +86,16 @@
 
   function confirm(message, title) {
     return new Promise(resolve => {
-      const modal = openModal(title || 'Confirmation', `<p class="confirm-text">${escapeHtml(message)}</p>`, `
-        <button class="btn btn-ghost" type="button" data-confirm="no">Annuler</button>
-        <button class="btn btn-danger" type="button" data-confirm="yes">Confirmer</button>`);
+      const modal = openModal(title, `<p class="confirm-text">${escapeHtml(message)}</p>`, `
+        <button class="btn btn-ghost" type="button" data-confirm="no">${escapeHtml(t('common.cancel'))}</button>
+        <button class="btn btn-danger" type="button" data-confirm="yes">${escapeHtml(t('common.confirm'))}</button>`);
+      let settled = false;
+      const finish = value => { if (!settled) { settled = true; closeModal(); resolve(value); } };
       modal.querySelectorAll('[data-confirm]').forEach(btn => {
-        btn.addEventListener('click', () => { closeModal(); resolve(btn.dataset.confirm === 'yes'); });
+        btn.addEventListener('click', () => finish(btn.dataset.confirm === 'yes'));
       });
-      const backdrop = modal.parentElement;
-      backdrop.addEventListener('click', e => {
-        if (e.target.hasAttribute('data-modal-close')) resolve(false);
+      modal.parentElement.addEventListener('click', e => {
+        if (e.target.hasAttribute('data-modal-close')) finish(false);
       });
     });
   }
@@ -112,10 +115,10 @@
       input.type = 'file'; input.accept = '.json,application/json';
       input.onchange = () => {
         const file = input.files && input.files[0];
-        if (!file) return reject(new Error('Aucun fichier sélectionné.'));
+        if (!file) return reject(new Error('toast.noFile'));
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error('Lecture du fichier impossible.'));
+        reader.onerror = () => reject(new Error('toast.fileRead'));
         reader.readAsText(file);
       };
       input.click();
@@ -127,7 +130,7 @@
     button.disabled = !!busy;
     if (busy) {
       button.dataset.label = button.textContent;
-      button.innerHTML = `<span class="spinner"></span> ${escapeHtml(label || 'Traitement…')}`;
+      button.innerHTML = `<span class="spinner"></span> ${escapeHtml(label || '…')}`;
     } else if (button.dataset.label) {
       button.textContent = button.dataset.label;
       delete button.dataset.label;
@@ -140,20 +143,79 @@
     const resetBtn = el('btn-reset');
     if (exportBtn) exportBtn.addEventListener('click', () => {
       downloadText('storage-optimizer-data.json', data.exportJSON());
-      toast('Données exportées en JSON.', 'success');
+      toast(t('toast.exported'), 'success');
     });
     if (importBtn) importBtn.addEventListener('click', async () => {
       try {
         const text = await pickFile();
         const result = data.importJSON(text);
-        toast(`${result.objects} objets et ${result.containers} conteneurs importés.`, 'success');
-      } catch (err) { toast(err.message, 'error'); }
+        toast(t('toast.imported', { n: result.objects, m: result.containers }), 'success');
+      } catch (err) {
+        toast(SO.i18n.t(err.message) === err.message ? err.message : SO.i18n.t(err.message), 'error');
+      }
     });
     if (resetBtn) resetBtn.addEventListener('click', async () => {
-      if (!await confirm('Remplacer toutes les données par les exemples d’origine ?', 'Réinitialiser')) return;
+      if (!await confirm(t('toast.resetConfirm'), t('toast.resetTitle'))) return;
       data.resetAll();
-      toast('Données réinitialisées.', 'success');
+      toast(t('toast.resetDone'), 'success');
     });
+  }
+
+  function renderSyncStatus(status) {
+    const wrap = el('sync-status');
+    const labels = {
+      synced: 'sync.synced', syncing: 'sync.syncing', error: 'sync.error',
+      local: 'sync.local', disabled: 'sync.disabled'
+    };
+    if (wrap) {
+      wrap.className = `sync-status ${status.status === 'synced' ? 'online' : status.status === 'syncing' ? 'syncing' : status.status === 'error' ? 'error' : ''}`;
+      const text = el('sync-status-text');
+      if (text) text.textContent = t(labels[status.status] || 'sync.local');
+      const detail = el('sync-detail');
+      if (detail) {
+        if (status.status === 'error' && status.message) detail.textContent = status.message;
+        else if (status.time) detail.textContent = t('sync.lastSync', { time: new Date(status.time).toLocaleTimeString(SO.i18n.locale) });
+        else detail.textContent = '';
+      }
+    }
+    const badge = document.querySelector('.sync-badge');
+    if (badge) {
+      badge.classList.toggle('online', status.status === 'synced');
+      badge.textContent = status.status === 'synced' ? '☁' : status.status === 'syncing' ? '◌' : status.status === 'error' ? '⚠' : '◍';
+      badge.title = t(labels[status.status] || 'sync.local');
+    }
+  }
+
+  function bindSyncTools() {
+    if (!SO.sync) return;
+    const cfg = SO.sync.getConfig() || {};
+    if (el('sync-owner')) el('sync-owner').value = cfg.owner || 'vadimguignard';
+    if (el('sync-repo')) el('sync-repo').value = cfg.repo || 'storage-optimizer';
+    if (el('sync-branch')) el('sync-branch').value = cfg.branch || 'sync';
+    if (el('sync-token')) el('sync-token').value = cfg.token || '';
+
+    const enableBtn = el('sync-enable');
+    if (enableBtn) enableBtn.addEventListener('click', async () => {
+      const owner = el('sync-owner').value.trim();
+      const repo = el('sync-repo').value.trim();
+      const branch = el('sync-branch').value.trim() || 'sync';
+      const token = el('sync-token').value.trim();
+      if (!owner || !repo || !token) { toast(t('sync.needFields'), 'error'); return; }
+      await SO.sync.enable({ owner, repo, branch, token });
+      toast(t('sync.saved'), 'success');
+    });
+    const nowBtn = el('sync-now');
+    if (nowBtn) nowBtn.addEventListener('click', async () => {
+      if (!SO.sync.isEnabled()) { toast(t('sync.needFields'), 'warning'); return; }
+      await SO.sync.syncNow();
+    });
+    const disableBtn = el('sync-disable');
+    if (disableBtn) disableBtn.addEventListener('click', () => {
+      SO.sync.disable();
+      if (el('sync-token')) el('sync-token').value = '';
+      toast(t('sync.disabledToast'), 'success');
+    });
+    SO.sync.onStatus(renderSyncStatus);
   }
 
   function renderNav() {
@@ -161,20 +223,29 @@
     if (!mount) return;
     const page = location.pathname.split('/').pop() || 'index.html';
     const links = [
-      ['index.html', '🏠', 'Accueil'],
-      ['objects.html', '📦', 'Objets'],
-      ['containers.html', '📮', 'Cartons'],
-      ['simulator.html', '🧊', 'Simulateur']
+      ['index.html', '🏠', 'nav.home'],
+      ['objects.html', '📦', 'nav.objects'],
+      ['containers.html', '📮', 'nav.containers'],
+      ['simulator.html', '🧊', 'nav.simulator']
     ];
     mount.innerHTML = `
       <header class="site-header">
         <div class="header-inner">
           <a class="brand" href="index.html"><span class="brand-mark">◈</span><span>Storage<span class="brand-accent">Optimizer</span></span></a>
-          <nav class="nav" aria-label="Navigation principale">
-            ${links.map(([href, icon, label]) => `<a href="${href}" class="nav-link ${page === href ? 'active' : ''}"><span>${icon}</span> ${label}</a>`).join('')}
+          <nav class="nav" aria-label="Navigation">
+            ${links.map(([href, icon, key]) => `<a href="${href}" class="nav-link ${page === href ? 'active' : ''}"><span>${icon}</span> ${escapeHtml(t(key))}</a>`).join('')}
           </nav>
+          <a class="sync-badge" href="index.html#sync-panel" title="Sync">◍</a>
+          <div class="lang-switch">
+            <label for="lang-select">${escapeHtml(t('nav.language'))}</label>
+            <select id="lang-select" aria-label="${escapeHtml(t('nav.language'))}">
+              <option value="en" ${SO.i18n.lang === 'en' ? 'selected' : ''}>English</option>
+              <option value="fr" ${SO.i18n.lang === 'fr' ? 'selected' : ''}>Français</option>
+            </select>
+          </div>
         </div>
       </header>`;
+    el('lang-select').addEventListener('change', e => SO.i18n.setLang(e.target.value));
   }
 
   function renderSummary() {
@@ -195,11 +266,11 @@
     renderNav();
     renderSummary();
     bindDataTools();
-    data.ensureSeeded().then(changed => {
-      if (changed) renderSummary();
-    });
+    bindSyncTools();
+    data.ensureSeeded().then(changed => { if (changed) renderSummary(); });
   });
   window.addEventListener('so:data-changed', renderSummary);
+  window.addEventListener('so:lang-changed', () => { renderNav(); renderSummary(); });
 
   SO.ui = {
     el, escapeHtml, formatDim, formatVolume, dimensionsText, toast,

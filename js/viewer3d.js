@@ -10,7 +10,7 @@
     const host = options.container;
     const labelEl = options.label || null;
     if (typeof THREE === 'undefined') {
-      host.innerHTML = '<div class="viewer-placeholder"><div><div class="vp-icon">⚠</div>Three.js n’est pas chargé (vérifiez <code>assets/vendor/three.min.js</code>).</div></div>';
+      host.innerHTML = '<div class="viewer-placeholder"><div><div class="vp-icon">⚠</div>Three.js is not loaded (check <code>assets/vendor/three.min.js</code>).</div></div>';
       return { setResult() {}, resetCamera() {}, setShowCartons() {}, setShowSpace() {}, dispose() {} };
     }
 
@@ -18,7 +18,7 @@
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     } catch (e) {
-      host.innerHTML = '<div class="viewer-placeholder"><div><div class="vp-icon">⚠</div>WebGL n’est pas disponible dans ce navigateur.</div></div>';
+      host.innerHTML = '<div class="viewer-placeholder"><div><div class="vp-icon">⚠</div>WebGL is not available in this browser.</div></div>';
       return { setResult() {}, resetCamera() {}, setShowCartons() {}, setShowSpace() {}, dispose() {} };
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));

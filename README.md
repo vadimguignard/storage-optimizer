@@ -1,83 +1,112 @@
 # Storage Optimizer
 
-Application web personnelle pour préparer un déménagement : décrire ses objets et ses cartons, définir un espace disponible, vérifier que tout rentre et visualiser une disposition 3D.
+A personal 3D storage optimiser for **one move**. Describe your items and boxes, define the available space, check that everything fits, and preview a realistic 3D layout.
 
-> Le problème traité est du **3D bin packing** : on ne compare pas seulement des volumes, on place des boîtes avec leurs trois dimensions, leurs rotations autorisées et sans collision.
+> This is a **3D bin packing** problem: items are placed with their three dimensions, their allowed rotations, and without collisions — not just by comparing volumes.
 
-## Fonctionnalités de la version 1
+The interface opens in **English** by default. Use the language selector in the header to switch to **Français**; the choice is remembered in your browser.
 
-- Gestion des **objets** : nom, forme (boîte ou cylindre), dimensions, unité (mm/cm/m), rotations autorisées, quantité, couleur, recherche, ajout/modification/suppression.
-- Gestion des **cartons** : dimensions, quantité, contenu déclaré et outil « cet objet rentre-t-il ? ».
-- **Simulateur** :
-  - mode « objets » : placement direct dans l'espace ;
-  - mode « cartons » : les objets sont d'abord emballés dans les cartons, puis les cartons sont placés dans l'espace ;
-  - contrainte globale sur les rotations, nombre d'essais réglable ;
-  - résultats chiffrés (objets placés, taux de remplissage, hauteur utilisée, temps de calcul) et liste des objets non placés.
-- **Visualisation 3D** avec Three.js : rotation/zoom à la souris, clic sur un objet pour voir son nom et ses dimensions, affichage/masquage du contour et des cartons.
-- Données **éditables via GitHub** (`data/*.json`) et persistance dans le navigateur (`localStorage`), avec import/export JSON.
+## Features
 
-## Démarrage
+- **Items**: name, shape (box or cylinder), dimensions, unit (mm/cm/m), allowed rotations, quantity, colour, search, add/edit/delete.
+- **Boxes**: internal dimensions, available quantity, declared contents and a “does this item fit?” check.
+- **Simulator**:
+  - *Items* mode: place items directly in the space;
+  - *Boxes* mode: pack items into boxes, then place the boxes in the space;
+  - global rotation switch, adjustable number of attempts;
+  - metrics (items placed, fill rate, used height, compute time) and a list of unplaced items.
+- **3D view** with Three.js: drag to rotate, scroll to zoom, click an item for details, toggle the outline and the boxes.
+- **No starter data**: the item and box lists are empty on first launch (`data/objects.json` and `data/containers.json` contain `[]`).
+- **Missing dimension** handling: if you enter only two dimensions, the third one is estimated as **the smallest of the two** (e.g. `180 × 80` → `80`). The estimated field is marked with `≈` and reported in a toast. A cylinder with a single known value copies it.
+- **Git-based sync** across your PC and phone: data lives in a dedicated `sync` branch while the site itself is served from `main` (GitHub Pages).
 
-### Option A — ouvrir directement `index.html`
+## Quick start
 
-Double-cliquez sur `index.html`. Les données d'exemple intégrées dans `js/data.js` sont utilisées, Three.js est présent dans `assets/vendor/`. Aucune connexion Internet n'est nécessaire.
-
-### Option B — serveur local (recommandé)
+Open `index.html` directly, or run the bundled dependency-free server:
 
 ```bash
 npm start
-# puis ouvrir http://localhost:8080
+# then open http://localhost:8080
 ```
 
-Le serveur Node inclus n'a aucune dépendance. Il permet notamment de charger les fichiers `data/*.json` comme jeu de données initial.
+The HTTP server is needed only to load the initial `data/*.json` files. Three.js is vendored in `assets/vendor/`, so the 3D view works offline.
 
-### Tests
+Tests:
 
 ```bash
 npm test
 ```
 
-Les tests couvrent la géométrie (unités, orientations, frontières, collisions), le packing (10 cas du cahier des charges) et le dépôt de données (import/export, validation).
+Tests cover geometry (units, estimation, orientations, boundaries, collisions), packing (10 cases) and the data repository (empty defaults, import/export, validation).
 
-## Utilisation
+## Using the app
 
-1. **Objets** : ajoutez vos affaires avec leurs dimensions. Le volume est calculé automatiquement. La quantité permet de représenter plusieurs exemplaires identiques.
-2. **Cartons** : indiquez les cartons disponibles et leur nombre.
-3. **Simulateur** :
-   - renseignez l'espace (par exemple `3 × 2 × 2,5 m`) ;
-   - choisissez le mode de calcul et les éléments à inclure ;
-   - cliquez sur **Optimiser** ;
-   - tournez la scène à la souris et cliquez sur un objet pour l'identifier.
+1. **Items** → add your belongings with two or three dimensions. If you leave one blank, it is estimated automatically.
+2. **Boxes** → declare your available boxes and their quantities.
+3. **Simulator** → set the space (e.g. `3 × 2 × 2.5 m`), choose what to include, click **Optimise**, then rotate the 3D scene and click an item to identify it.
+
+The 3D placeholder (“The 3D view will appear here after optimisation.”) disappears as soon as a valid layout is computed.
+
+## Sync across devices
+
+The site is static, but the data is versioned in GitHub:
+
+- `main` holds the code and is published with GitHub Pages.
+- `sync` holds `data/store.json`, the live shared dataset.
+- The web app reads it from the public raw URL and writes it through the GitHub Contents API.
+- Every 20 seconds, and each time you return to the tab, the app checks for newer data. Any local change is pushed automatically a moment later.
+
+Setup:
+
+1. Create a fine-grained personal access token with **read/write access to repository contents** for `vadimguignard/storage-optimizer`.
+2. Open **Home → Sync across devices** on each device, fill in the owner (`vadimguignard`), repository (`storage-optimizer`), branch (`sync`) and token, then click **Enable sync**.
+3. On the phone, enter the same values. Its data is replaced by the newest version from GitHub, and future changes on either device propagate to the other.
+
+**The token is never embedded in the site.** It is kept only in the `localStorage` of the browser where you entered it, and is sent only to `api.github.com`. Do not commit it to the repository.
+
+If the `sync` branch does not exist yet, create it from `main` and add `data/store.json`:
+
+```json
+{
+  "app": "storage-optimizer",
+  "version": 1,
+  "updatedAt": 0,
+  "objects": [],
+  "containers": []
+}
+```
 
 ## Architecture
 
 ```
-├── index.html            Accueil et résumé
-├── objects.html          Gestion des objets
-├── containers.html       Gestion des cartons
-├── simulator.html        Simulateur + visualisation
-├── css/style.css         Interface
+├── index.html            Home, summary and sync panel
+├── objects.html          Item management
+├── containers.html       Box management
+├── simulator.html        Simulator + 3D view
+├── css/style.css         Styling
 ├── js/
-│   ├── app.js            Navigation, modales, toasts, formatage, import/export
-│   ├── data.js           Dépôt localStorage + amorçage depuis data/*.json
-│   ├── objects.js        Logique de la page Objets
-│   ├── containers.js     Logique de la page Cartons
-│   ├── geometry.js       Unités, volumes, rotations, limites, collisions
-│   ├── packing.js        Heuristique de placement + mode cartons
-│   ├── viewer3d.js       Rendu Three.js
-│   └── simulator.js      Orchestration du simulateur
-├── data/                 Jeux de données JSON modifiables via GitHub
-├── tests/                Tests Node (node:test)
-├── assets/vendor/        Three.js (version locale, hors ligne)
-└── server.js             Serveur statique optionnel
+│   ├── app.js            Navigation, language selector, modals, toasts, import/export, sync UI
+│   ├── i18n.js           English/French dictionaries and helpers
+│   ├── data.js           localStorage repository + seeding from data/*.json
+│   ├── sync.js           GitHub Contents API read/write and polling
+│   ├── objects.js        Item page logic
+│   ├── containers.js     Box page logic
+│   ├── geometry.js       Units, dimension estimation, rotations, bounds, collisions
+│   ├── packing.js        Placement heuristic + box mode
+│   ├── viewer3d.js       Three.js rendering
+│   └── simulator.js      Simulator orchestration
+├── data/                 Initial JSON datasets (empty by default)
+├── tests/                Node tests (node:test)
+├── assets/vendor/        Local Three.js build
+└── server.js             Optional static server
 ```
 
-## Modèle de données
+### Data model
 
 ```json
 {
   "id": "table-001",
-  "name": "Table à manger",
+  "name": "Dining table",
   "type": "box",
   "dimensions": { "length": 180, "width": 80, "height": 75 },
   "unit": "cm",
@@ -87,48 +116,39 @@ Les tests couvrent la géométrie (unités, orientations, frontières, collision
 }
 ```
 
-- `type` : `box` (`length`, `width`, `height`) ou `cylinder` (`diameter`, `height`). Un cylindre est approché par sa boîte englobante.
-- `rotations` : `allowed` (6 orientations), `upright` (2 orientations, hauteur conservée), `none` (aucune).
-- `unit` : `mm`, `cm` ou `m`. Toutes les conversions sont faites en interne en centimètres.
+- `type`: `box` (`length`, `width`, `height`) or `cylinder` (`diameter`, `height`). A cylinder is approximated by its bounding box.
+- Only two dimensions are required; the missing one is stored in `dimensions` and listed in `estimated`.
+- `rotations`: `allowed` (6 orientations), `upright` (2 orientations, height kept vertical), `none` (no rotation).
+- `unit`: `mm`, `cm` or `m`. Everything is converted to centimetres internally.
+- A container follows the same model, with `quantity` (how many boxes of this type) and `contents` (indicative item ids).
 
-Un conteneur suit le même modèle avec `quantity` (nombre de cartons de ce type disponibles) et `contents` (liste indicative d'identifiants d'objets).
+### Algorithm
 
-## Algorithme
+`packing.js` uses an “extreme points” heuristic:
 
-`packing.js` implémente une heuristique « extreme points » :
+1. normalise units and expand quantities;
+2. sort items by decreasing volume;
+3. generate candidate points (origin + corners of already placed boxes);
+4. try every allowed orientation at every point;
+5. reject overflow or collisions;
+6. score placements by height, position and number of touching faces;
+7. run several attempts with a slightly shuffled order and keep the best result (fewest unplaced items, then lowest height and footprint).
 
-1. normalisation des unités et expansion des quantités ;
-2. tri des objets par volume décroissant ;
-3. génération de points candidats (origine + sommets des objets déjà placés) ;
-4. essai de chaque orientation autorisée à chaque point ;
-5. rejet si dépassement des limites ou collision ;
-6. score de placement : hauteur, puis position, puis nombre de faces en contact ;
-7. plusieurs essais avec un ordre légèrement aléatoire, conservation de la meilleure solution (moins d'objets non placés, puis hauteur et empreinte au sol minimales).
+Box mode applies the same logic twice: fill the boxes, then place the boxes in the space. Items inside a box remain visible in the 3D scene.
 
-Le mode cartons applique la même logique à deux niveaux : remplissage des cartons puis placement des cartons dans l'espace. Les objets contenus dans un carton restent visibles dans la scène 3D.
+This is deliberately a heuristic: an exact solution becomes very expensive as the number of items grows. A very good answer in a few seconds is preferred.
 
-C'est volontairement une heuristique : une solution mathématiquement optimale devient très coûteuse à calculer dès que le nombre d'objets augmente. Ici, une très bonne solution en quelques secondes est préférable.
+## Known limitations
 
-## Limites connues de la V1
-
-- Géométrie alignée sur les axes uniquement (pas de rotation arbitraire).
-- Les cylindres sont approchés par leur boîte englobante.
-- Aucune contrainte avancée (fragilité, accès, poids, priorité de déballage).
-- Le nombre de cartons ouverts est limité par la quantité déclarée ; le remplissage des cartons est glouton (first-fit).
-- Les données sont stockées par navigateur : exportez le JSON pour les sauvegarder ou les versionner.
-
-## Évolutions possibles
-
-- Web Worker pour ne pas bloquer l'interface sur les gros calculs.
-- Recherche locale / recuit simulé pour améliorer les scores.
-- Solveur exact ou CP-SAT pour les petits cas critiques.
-- TypeScript, base de données et mode collaboratif si le projet grandit.
-- Export de la disposition (plan de chargement PDF, liste par carton).
+- Axis-aligned geometry only (no arbitrary rotations).
+- Cylinders are approximated by their bounding box.
+- No advanced constraints (fragility, access, weight, unpacking priority).
+- The number of opened boxes is limited by declared quantities; box filling is greedy (first-fit).
+- Sync requires a token per device; without it, data stays local to that browser.
 
 ## GitHub Pages
 
-1. Créez un dépôt public et poussez tout le contenu du dossier.
-2. Dans **Settings → Pages**, choisissez « Deploy from a branch » → `main` → `/ (root)`.
-3. Le site est alors disponible sur `https://<pseudo>.github.io/<depot>/`.
-
-`data/objects.json` et `data/containers.json` peuvent être modifiés directement sur GitHub : ils servent de données initiales tant que le navigateur n'a pas encore de données locales (bouton « Réinitialiser » pour repartir de ces fichiers).
+1. Push the repository to GitHub (default branch `main`).
+2. **Settings → Pages → Deploy from a branch → `main` → `/ (root)`**.
+3. The site is available at `https://vadimguignard.github.io/storage-optimizer/`.
+4. Create the separate `sync` branch for the live data as described above. GitHub Pages will not rebuild when `sync` changes, so the app itself keeps working normally.
