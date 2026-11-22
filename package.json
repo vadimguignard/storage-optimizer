@@ -1,0 +1,10 @@
+{
+  "name": "storage-optimizer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Application web d'optimisation 3D du rangement pour un déménagement",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  }
+}

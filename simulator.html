@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulateur — Storage Optimizer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/geometry.js" defer></script>
+  <script src="js/data.js" defer></script>
+  <script src="js/packing.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="assets/vendor/three.min.js"></script>
+  <script src="js/viewer3d.js" defer></script>
+  <script src="js/simulator.js" defer></script>
+</head>
+<body>
+  <div id="nav-mount"></div>
+  <main class="container">
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Simulateur 3D</div>
+        <h1>Optimiser le rangement</h1>
+        <p>Renseignez l'espace disponible, choisissez ce que vous voulez ranger, puis lancez le calcul. Le résultat est affiché en 3D : faites glisser pour tourner, molette pour zoomer, cliquez sur un objet pour l'identifier.</p>
+      </div>
+    </div>
+
+    <div class="sim-layout">
+      <aside class="sim-side">
+        <section class="card">
+          <div class="card-head"><h2>1. Espace disponible</h2></div>
+          <div class="form-row">
+            <div class="field"><label for="space-length">Longueur</label><input id="space-length" type="number" min="1" step="1" value="300"></div>
+            <div class="field"><label for="space-width">Largeur</label><input id="space-width" type="number" min="1" step="1" value="200"></div>
+            <div class="field"><label for="space-height">Hauteur</label><input id="space-height" type="number" min="1" step="1" value="250"></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label for="space-unit">Unité</label>
+            <select id="space-unit"><option value="m">Mètres (m)</option><option value="cm" selected>Centimètres (cm)</option><option value="mm">Millimètres (mm)</option></select>
+          </div>
+          <p class="field-hint" id="space-summary" style="margin-top:10px">300 × 200 × 250 cm · 15 m³</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>2. Que ranger ?</h2></div>
+          <div class="field">
+            <label>Mode de calcul</label>
+            <select id="mode">
+              <option value="space">Objets directement dans l'espace</option>
+              <option value="cartons">Objets dans des cartons, puis dans l'espace</option>
+            </select>
+          </div>
+          <div class="field" style="margin-top:14px"><label>Objets à inclure</label><div class="check-list" id="object-list"></div></div>
+          <div class="field" id="carton-field" style="margin-top:14px" hidden><label>Cartons utilisables</label><div class="check-list" id="carton-list"></div></div>
+          <div class="actions" style="margin-top:12px">
+            <button class="btn btn-sm btn-ghost" id="select-all" type="button">Tout sélectionner</button>
+            <button class="btn btn-sm btn-ghost" id="select-none" type="button">Tout désélectionner</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>3. Options</h2></div>
+          <label class="toggle"><input type="checkbox" id="rotations" checked> Autoriser les rotations des objets</label>
+          <div class="field" style="margin-top:16px">
+            <label for="attempts">Nombre d'essais : <strong id="attempts-value">12</strong></label>
+            <div class="range-row"><input id="attempts" type="range" min="1" max="40" value="12"></div>
+            <span class="field-hint">Plus il y a d'essais, plus le résultat peut être compact (calcul un peu plus long).</span>
+          </div>
+          <button class="btn btn-primary" id="btn-optimize" type="button" style="width:100%;margin-top:20px">⚡ Optimiser</button>
+        </section>
+      </aside>
+
+      <section class="card">
+        <div class="card-head"><h2>Résultat</h2><span class="card-sub" id="result-meta">En attente d'un calcul</span></div>
+        <div class="result-banner idle" id="result-banner">
+          <span class="rb-icon">🧊</span>
+          <div><strong>Prêt à calculer</strong><small>Renseignez l'espace et lancez l'optimisation pour voir la disposition 3D.</small></div>
+        </div>
+
+        <div class="kpis" id="kpis" hidden>
+          <div class="kpi"><div class="kpi-value" id="kpi-placed">—</div><div class="kpi-label" id="kpi-placed-label">Objets placés</div></div>
+          <div class="kpi"><div class="kpi-value" id="kpi-fill">—</div><div class="kpi-label">Remplissage</div><div class="progress"><div id="fill-bar" style="width:0%"></div></div></div>
+          <div class="kpi"><div class="kpi-value" id="kpi-height">—</div><div class="kpi-label">Hauteur utilisée</div></div>
+          <div class="kpi"><div class="kpi-value" id="kpi-time">—</div><div class="kpi-label">Temps de calcul</div></div>
+        </div>
+
+        <div class="viewer-shell">
+          <div id="viewer"></div>
+          <div class="viewer-toolbar">
+            <button class="btn btn-sm" id="btn-reset-camera" type="button">⟲ Caméra</button>
+            <button class="btn btn-sm" id="btn-toggle-cartons" type="button" hidden>📮 Cartons</button>
+            <button class="btn btn-sm" id="btn-toggle-space" type="button">◻ Contour</button>
+          </div>
+          <div class="viewer-label" id="viewer-label"></div>
+          <div class="viewer-legend">Glisser : rotation · Molette : zoom · Clic : informations</div>
+          <div class="viewer-placeholder" id="viewer-placeholder"><div><div class="vp-icon">🧊</div>La visualisation apparaîtra ici après optimisation.</div></div>
+        </div>
+
+        <div id="unplaced-block" style="margin-top:18px" hidden>
+          <h3 style="font-size:.95rem;color:#991b1b">Objets non placés</h3>
+          <ul class="unplaced-list" id="unplaced-list"></ul>
+        </div>
+        <p class="hint-line" id="hint-line">Astuce : essayez d'autoriser les rotations ou d'augmenter le nombre d'essais si certains objets restent dehors.</p>
+      </section>
+    </div>
+  </main>
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+</body>
+</html>

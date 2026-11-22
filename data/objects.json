@@ -1,0 +1,14 @@
+[
+  { "id": "table-001", "name": "Table à manger", "type": "box", "dimensions": { "length": 180, "width": 80, "height": 75 }, "unit": "cm", "rotations": "allowed", "quantity": 1, "color": "#3b82f6" },
+  { "id": "canape-001", "name": "Canapé", "type": "box", "dimensions": { "length": 220, "width": 95, "height": 85 }, "unit": "cm", "rotations": "allowed", "quantity": 1, "color": "#8b5cf6" },
+  { "id": "lit-001", "name": "Lit double", "type": "box", "dimensions": { "length": 200, "width": 160, "height": 50 }, "unit": "cm", "rotations": "allowed", "quantity": 1, "color": "#ec4899" },
+  { "id": "armoire-001", "name": "Armoire", "type": "box", "dimensions": { "length": 120, "width": 60, "height": 200 }, "unit": "cm", "rotations": "none", "quantity": 1, "color": "#f97316" },
+  { "id": "frigo-001", "name": "Réfrigérateur", "type": "box", "dimensions": { "length": 70, "width": 70, "height": 180 }, "unit": "cm", "rotations": "none", "quantity": 1, "color": "#14b8a6" },
+  { "id": "lave-linge-001", "name": "Lave-linge", "type": "box", "dimensions": { "length": 60, "width": 60, "height": 85 }, "unit": "cm", "rotations": "none", "quantity": 1, "color": "#0ea5e9" },
+  { "id": "bureau-001", "name": "Bureau", "type": "box", "dimensions": { "length": 140, "width": 70, "height": 75 }, "unit": "cm", "rotations": "allowed", "quantity": 1, "color": "#6366f1" },
+  { "id": "chaise-001", "name": "Chaise", "type": "box", "dimensions": { "length": 45, "width": 50, "height": 90 }, "unit": "cm", "rotations": "allowed", "quantity": 4, "color": "#eab308" },
+  { "id": "carton-livres", "name": "Carton de livres", "type": "box", "dimensions": { "length": 40, "width": 30, "height": 30 }, "unit": "cm", "rotations": "allowed", "quantity": 8, "color": "#a16207" },
+  { "id": "carton-vaisselle", "name": "Carton de vaisselle", "type": "box", "dimensions": { "length": 50, "width": 40, "height": 40 }, "unit": "cm", "rotations": "allowed", "quantity": 4, "color": "#d97706" },
+  { "id": "lampe-001", "name": "Lampadaire", "type": "cylinder", "dimensions": { "diameter": 35, "height": 160 }, "unit": "cm", "rotations": "upright", "quantity": 1, "color": "#facc15" },
+  { "id": "plante-001", "name": "Grande plante", "type": "cylinder", "dimensions": { "diameter": 50, "height": 120 }, "unit": "cm", "rotations": "upright", "quantity": 1, "color": "#22c55e" }
+]

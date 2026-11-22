@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Application personnelle de gestion et d'optimisation 3D d'un espace de stockage.">
+  <title>Storage Optimizer — Accueil</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/geometry.js" defer></script>
+  <script src="js/data.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <div id="nav-mount"></div>
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">Projet déménagement · version 1</div>
+      <h1>Rangez vos affaires avant de déménager, pas le jour J.</h1>
+      <p>Décrivez vos objets et vos cartons, définissez l'espace disponible, puis laissez l'algorithme trouver une disposition 3D réaliste qui tient compte des rotations et des collisions.</p>
+    </section>
+
+    <div class="stats">
+      <div class="card stat"><div class="stat-value" data-summary="objects">—</div><div class="stat-label">Objets à ranger</div></div>
+      <div class="card stat"><div class="stat-value" data-summary="containers">—</div><div class="stat-label">Cartons disponibles</div></div>
+      <div class="card stat"><div class="stat-value" data-summary="volume">—</div><div class="stat-label">Volume total des objets</div></div>
+    </div>
+
+    <div class="quick-links">
+      <a class="quick-link" href="objects.html"><span class="ql-icon">📦</span><strong>Objets</strong><small>Ajouter, modifier, supprimer</small></a>
+      <a class="quick-link" href="containers.html"><span class="ql-icon">📮</span><strong>Cartons</strong><small>Dimensions et contenus</small></a>
+      <a class="quick-link" href="simulator.html"><span class="ql-icon">🧊</span><strong>Simulateur</strong><small>Optimiser et visualiser en 3D</small></a>
+    </div>
+
+    <div class="grid grid-3" style="margin-top: 28px;">
+      <div class="card feature"><div class="feature-icon">📐</div><div><h3>Vraie géométrie 3D</h3><p>Les volumes seuls ne suffisent pas : chaque objet est placé selon ses trois dimensions, avec ses rotations autorisées.</p></div></div>
+      <div class="card feature"><div class="feature-icon">🚫</div><div><h3>Aucune collision</h3><p>Le placement vérifie les limites de l'espace et les chevauchements avec les objets déjà posés.</p></div></div>
+      <div class="card feature"><div class="feature-icon">🧠</div><div><h3>Heuristique rapide</h3><p>Plusieurs essais avec des ordres différents ; la meilleure disposition est conservée en quelques secondes.</p></div></div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <div class="card-head"><div><h2>Vos données</h2><div class="card-sub">Tout est stocké dans votre navigateur. Exportez un JSON pour le versionner sur GitHub.</div></div></div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="btn-export" type="button">⬇ Exporter JSON</button>
+        <button class="btn btn-ghost" id="btn-import" type="button">⬆ Importer JSON</button>
+        <button class="btn btn-ghost" id="btn-reset" type="button">↺ Réinitialiser les exemples</button>
+      </div>
+      <p class="hint-line">Les fichiers <code>data/objects.json</code> et <code>data/containers.json</code> servent de jeu de données initial et peuvent être modifiés directement dans le dépôt.</p>
+    </div>
+  </main>
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+</body>
+</html>

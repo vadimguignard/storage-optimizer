@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Objets — Storage Optimizer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/geometry.js" defer></script>
+  <script src="js/data.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="js/objects.js" defer></script>
+</head>
+<body>
+  <div id="nav-mount"></div>
+  <main class="container">
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">Base de données</div>
+        <h1>Objets</h1>
+        <p>Liste de tout ce que vous souhaitez stocker. Les dimensions saisies dans une autre unité sont converties automatiquement en cm pour le calcul.</p>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="btn-import" type="button">⬆ Importer</button>
+        <button class="btn btn-ghost" id="btn-export" type="button">⬇ Exporter</button>
+        <button class="btn btn-ghost" id="btn-reset" type="button">↺ Réinitialiser</button>
+        <button class="btn btn-primary" id="btn-add" type="button">＋ Ajouter un objet</button>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="toolbar">
+        <div class="search"><input id="search" class="input" type="search" placeholder="Rechercher un objet…" autocomplete="off"></div>
+        <span class="badge" id="count-badge">0 objet</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Objet</th><th>Type</th><th>Dimensions</th><th>Volume</th><th>Rotations</th><th>Qté</th><th style="text-align:right">Actions</th></tr></thead>
+          <tbody id="objects-body"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="objects-empty" hidden><div class="empty-icon">📦</div><p>Aucun objet pour le moment.</p></div>
+    </section>
+  </main>
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+</body>
+</html>
