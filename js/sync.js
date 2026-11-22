@@ -10,7 +10,9 @@
   const CONFIG_KEY = 'so.sync.config.v1';
   const STATE_KEY = 'so.sync.state.v1';
   const DATA_PATH = 'data/store.json';
-  const POLL_MS = 20000;
+  // Short interval so a change made on one device appears almost immediately on the others.
+  // Conditional GETs (ETag) keep this cheap and below GitHub's rate limit.
+  const POLL_MS = 2000;
 
   const memory = new Map();
   const store = (typeof localStorage !== 'undefined') ? localStorage : {
@@ -27,10 +29,11 @@
   }
 
   let config = readJSON(CONFIG_KEY, null);
-  let state = Object.assign({ sha: null, lastUpdatedAt: 0, deviceId: null }, readJSON(STATE_KEY, {}));
+  let state = Object.assign({ sha: null, etag: null, lastUpdatedAt: 0, deviceId: null }, readJSON(STATE_KEY, {}));
   if (!state.deviceId) state.deviceId = Math.random().toString(36).slice(2, 10);
   let applyingRemote = false;
-  let pushTimer = null;
+  let pushInFlight = false;
+  let pushQueued = false;
   let pollTimer = null;
   let lastStatus = { status: config && config.enabled ? 'synced' : 'local' };
   const listeners = [];
@@ -47,14 +50,22 @@
     return `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${DATA_PATH}?ref=${encodeURIComponent(config.branch)}`;
   }
 
-  function headers() {
-    return {
+  function headers(extra) {
+    const result = {
       Authorization: `Bearer ${config.token}`,
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'Content-Type': 'application/json',
       'User-Agent': 'storage-optimizer'
     };
+    // Conditional GET: a 304 response does not consume the GitHub API rate limit.
+    if (extra && extra.ifNoneMatch) result['If-None-Match'] = extra.ifNoneMatch;
+    return result;
+  }
+
+  function responseEtag(response) {
+    return (response.headers && typeof response.headers.get === 'function')
+      ? response.headers.get('etag') : null;
   }
 
   function encodeBase64(text) {
@@ -103,31 +114,49 @@
   }
 
   /** Download the remote store via the Contents API and apply it when newer. */
-  async function pull() {
+  async function pull(quiet) {
     if (!isEnabled()) return { changed: false };
-    emit('syncing');
+    if (!quiet) emit('syncing');
     try {
-      const response = await fetch(apiUrl(), { headers: headers(), cache: 'no-store' });
-      if (response.status === 404) { emit('synced'); return { changed: false, missing: true }; }
+      const response = await fetch(apiUrl(), {
+        headers: headers({ ifNoneMatch: state.etag }),
+        cache: 'no-store'
+      });
+      if (response.status === 304) {
+        emit('synced', { time: state.lastUpdatedAt });
+        return { changed: false };
+      }
+      if (response.status === 404) {
+        state.etag = null; saveState();
+        emit('synced'); return { changed: false, missing: true };
+      }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const file = await response.json();
       if (!file.content) throw new Error('missing content');
       const remote = JSON.parse(decodeBase64(file.content));
       if (!remote || !Array.isArray(remote.objects)) throw new Error('invalid payload');
 
-      if (file.sha) { state.sha = file.sha; saveState(); }
+      if (file.sha) state.sha = file.sha;
+      state.etag = responseEtag(response);
+      saveState();
       const updatedAt = Number(remote.updatedAt) || 0;
       if (state.lastUpdatedAt && updatedAt <= state.lastUpdatedAt) {
         emit('synced', { time: state.lastUpdatedAt });
         return { changed: false };
       }
       applyingRemote = true;
-      SO.data.saveObjects(normalizeList(remote.objects, false));
-      SO.data.saveContainers(normalizeList(remote.containers, true));
+      try {
+        SO.data.saveObjects(normalizeList(remote.objects, false));
+        SO.data.saveContainers(normalizeList(remote.containers, true));
+      } finally {
+        applyingRemote = false;
+      }
       state.lastUpdatedAt = updatedAt;
       saveState();
-      setTimeout(() => { applyingRemote = false; }, 0);
       emit('synced', { time: updatedAt });
+      if (root.SO.ui && root.SO.i18n) {
+        root.SO.ui.toast(root.SO.i18n.t('sync.remoteNewer'), 'success');
+      }
       return { changed: true };
     } catch (e) {
       emit('error', { message: e.message });
@@ -167,6 +196,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const json = await response.json();
       state.sha = (json.content && json.content.sha) || sha;
+      state.etag = responseEtag(response);
       state.lastUpdatedAt = data.updatedAt;
       saveState();
       emit('synced', { time: data.updatedAt });
@@ -179,33 +209,42 @@
     }
   }
 
-  function schedulePush() {
+  /** Push immediately on confirmation; coalesce overlapping saves into one follow-up. */
+  async function schedulePush() {
     if (!isEnabled() || applyingRemote) return;
-    clearTimeout(pushTimer);
     emit('syncing');
-    pushTimer = setTimeout(() => push(false, true), 600);
+    if (pushInFlight) { pushQueued = true; return; }
+    pushInFlight = true;
+    try {
+      do {
+        pushQueued = false;
+        await push(false, true);
+      } while (pushQueued && isEnabled());
+    } finally {
+      pushInFlight = false;
+    }
   }
 
   function startPolling() {
     clearInterval(pollTimer);
     if (!isEnabled()) return;
-    pollTimer = setInterval(() => { pull().catch(() => {}); }, POLL_MS);
+    pollTimer = setInterval(() => { pull(true).catch(() => {}); }, POLL_MS);
   }
 
   function enable(next) {
     config = Object.assign({}, next, { branch: next.branch || 'sync', enabled: true });
     state.sha = null;
+    state.etag = null;
     state.lastUpdatedAt = 0;
     saveConfig(); saveState();
     startPolling();
-    return pull().catch(() => {}).then(() => push(false, false));
+    return pull(false).catch(() => {}).then(() => push(false, false));
   }
 
   function disable() {
     config = null;
     store.removeItem(CONFIG_KEY);
     clearInterval(pollTimer);
-    clearTimeout(pushTimer);
     emit('disabled');
   }
 
@@ -227,12 +266,12 @@
       schedulePush();
     });
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && isEnabled()) pull().catch(() => {});
+      if (!document.hidden && isEnabled()) pull(true).catch(() => {});
     });
     if (config && config.enabled) {
       startPolling();
-      // Check immediately on load instead of waiting for the first 20 s tick.
-      pull().catch(() => {});
+      // Check immediately on load; background checks then run every POLL_MS.
+      pull(true).catch(() => {});
     }
   }
 
