@@ -1,7 +1,7 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 1795351099427,
+  "updatedAt": 1795351132025,
   "deviceId": "3t4j06n7",
   "objects": [
     {
@@ -10,7 +10,7 @@
       "type": "box",
       "dimensions": {
         "length": 12,
-        "width": 2,
+        "width": 122,
         "height": 12
       },
       "unit": "cm",
