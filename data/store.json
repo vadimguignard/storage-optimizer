@@ -1,8 +1,38 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 1795346149280,
-  "deviceId": "sync-verification",
-  "objects": [],
+  "updatedAt": 1795346645145,
+  "deviceId": "assistant",
+  "objects": [
+    {
+      "id": "item-mwrr1dax-3gee",
+      "name": "Miroir",
+      "unit": "cm",
+      "quantity": 1,
+      "rotations": "upright",
+      "estimated": [],
+      "type": "box",
+      "dimensions": {
+        "length": 40,
+        "width": 45,
+        "height": 160
+      },
+      "color": "#60a5fa"
+    },
+    {
+      "id": "item-mwrr1dax-pyog",
+      "name": "Table ronde",
+      "unit": "cm",
+      "quantity": 1,
+      "rotations": "upright",
+      "estimated": [],
+      "type": "cylinder",
+      "dimensions": {
+        "diameter": 40,
+        "height": 55
+      },
+      "color": "#d97706"
+    }
+  ],
   "containers": []
 }
