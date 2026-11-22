@@ -1,53 +1,8 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 1795351727838,
-  "deviceId": "qwbmjyke",
-  "objects": [
-    {
-      "id": "item-mwrtohx6-9lqy",
-      "name": "1",
-      "type": "box",
-      "dimensions": {
-        "length": 12,
-        "width": 122,
-        "height": 12
-      },
-      "unit": "cm",
-      "rotations": "allowed",
-      "quantity": 1,
-      "color": "#3b82f6",
-      "estimated": []
-    },
-    {
-      "id": "item-mwru1t16-m665",
-      "name": "table",
-      "type": "cylinder",
-      "dimensions": {
-        "diameter": 40,
-        "height": 55
-      },
-      "unit": "cm",
-      "rotations": "allowed",
-      "quantity": 1,
-      "color": "#3b82f6",
-      "estimated": []
-    },
-    {
-      "id": "item-mwru2b4t-qk0e",
-      "name": "mirror",
-      "type": "box",
-      "dimensions": {
-        "length": 40,
-        "width": 160,
-        "height": 45
-      },
-      "unit": "cm",
-      "rotations": "allowed",
-      "quantity": 1,
-      "color": "#3b82f6",
-      "estimated": []
-    }
-  ],
+  "updatedAt": 1795351952183,
+  "deviceId": "zvjuc95k",
+  "objects": [],
   "containers": []
 }
