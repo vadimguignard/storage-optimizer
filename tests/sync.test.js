@@ -59,13 +59,16 @@ test('sync reads the API, resolves missing dimensions and pushes back with the s
   assert.deepEqual(stored.objects[0].estimated, ['height']);
 
   const get = calls.find(c => !(c.options && c.options.method === 'PUT'));
-  assert.ok(get.url.startsWith('https://api.github.com/repos/vadimguignard/storage-optimizer/contents/data/store.json'));
-  assert.equal(get.options.headers.Authorization, 'Bearer test-token');
+  assert.ok(get.url.includes('workers.dev'), 'the browser must call the proxy, not GitHub directly');
+  assert.ok(!get.url.includes('api.github.com'));
+  assert.equal(get.options.headers.Authorization, undefined, 'the browser must never send a token');
+  assert.equal(get.options.headers['X-Storage-Optimizer'], undefined, 'no custom header: it would require CORS preflight approval');
+  assert.ok(!JSON.stringify(global.SO.sync.getConfig()).includes('test-token'));
 
   const put = calls.find(c => c.options && c.options.method === 'PUT');
   assert.ok(put, 'a PUT request should have been sent');
   const body = JSON.parse(put.options.body);
-  assert.equal(body.branch, 'sync');
+  assert.equal(body.branch, undefined, 'the Worker fixes the branch to sync');
   assert.equal(body.sha, 'old-sha');
   const uploaded = JSON.parse(Buffer.from(body.content, 'base64').toString('utf8'));
   assert.deepEqual(uploaded.objects, stored.objects);

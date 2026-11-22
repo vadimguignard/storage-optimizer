@@ -188,31 +188,29 @@
 
   function bindSyncTools() {
     if (!SO.sync) return;
-    const cfg = SO.sync.getConfig() || {};
-    if (el('sync-owner')) el('sync-owner').value = cfg.owner || 'vadimguignard';
-    if (el('sync-repo')) el('sync-repo').value = cfg.repo || 'storage-optimizer';
-    if (el('sync-branch')) el('sync-branch').value = cfg.branch || 'sync';
-    if (el('sync-token')) el('sync-token').value = cfg.token || '';
-
+    const isOn = () => SO.sync.isEnabled();
     const enableBtn = el('sync-enable');
+    const nowBtn = el('sync-now');
+    const disableBtn = el('sync-disable');
+
+    const refreshButtons = () => {
+      if (enableBtn) enableBtn.hidden = isOn();
+      if (nowBtn) nowBtn.hidden = !isOn();
+      if (disableBtn) disableBtn.hidden = !isOn();
+    };
+    SO.sync.onStatus(refreshButtons);
+    refreshButtons();
+
     if (enableBtn) enableBtn.addEventListener('click', async () => {
-      const owner = el('sync-owner').value.trim();
-      const repo = el('sync-repo').value.trim();
-      const branch = el('sync-branch').value.trim() || 'sync';
-      const token = el('sync-token').value.trim();
-      if (!owner || !repo || !token) { toast(t('sync.needFields'), 'error'); return; }
-      await SO.sync.enable({ owner, repo, branch, token });
+      await SO.sync.enable();
       toast(t('sync.saved'), 'success');
     });
-    const nowBtn = el('sync-now');
     if (nowBtn) nowBtn.addEventListener('click', async () => {
-      if (!SO.sync.isEnabled()) { toast(t('sync.needFields'), 'warning'); return; }
+      if (!isOn()) { toast(t('sync.disabled'), 'warning'); return; }
       await SO.sync.syncNow();
     });
-    const disableBtn = el('sync-disable');
     if (disableBtn) disableBtn.addEventListener('click', () => {
       SO.sync.disable();
-      if (el('sync-token')) el('sync-token').value = '';
       toast(t('sync.disabledToast'), 'success');
     });
     SO.sync.onStatus(renderSyncStatus);

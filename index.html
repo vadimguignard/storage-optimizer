@@ -44,18 +44,12 @@
         <div><h2 data-i18n="sync.title">Sync across devices</h2><div class="card-sub" data-i18n="sync.desc">Store the data in a GitHub branch so every device sees the same list.</div></div>
         <div class="sync-status" id="sync-status"><span class="sync-dot"></span><span id="sync-status-text">Local only</span></div>
       </div>
-      <div class="grid grid-3">
-        <div class="field"><label for="sync-owner" data-i18n="sync.owner">Repository owner</label><input id="sync-owner" value="vadimguignard" autocomplete="off"></div>
-        <div class="field"><label for="sync-repo" data-i18n="sync.repo">Repository name</label><input id="sync-repo" value="storage-optimizer" autocomplete="off"></div>
-        <div class="field"><label for="sync-branch" data-i18n="sync.branch">Data branch</label><input id="sync-branch" value="sync" autocomplete="off"></div>
-      </div>
-      <div class="field" style="margin-top:14px;max-width:520px"><label for="sync-token" data-i18n="sync.token">Access token</label><input id="sync-token" type="password" placeholder="ghp_… / github_pat_…" autocomplete="off"></div>
       <div class="actions" style="margin-top:16px">
         <button class="btn btn-primary" id="sync-enable" type="button" data-i18n="sync.enable">Enable sync</button>
         <button class="btn btn-ghost" id="sync-now" type="button" data-i18n="sync.now">Sync now</button>
         <button class="btn btn-ghost" id="sync-disable" type="button" data-i18n="sync.disable">Disable</button>
       </div>
-      <div class="sync-note" data-i18n="sync.note">The token stays in this browser only. Use a fine-grained token with read/write access to the repository contents, and enter it once on each device.</div>
+      <div class="sync-note" data-i18n="sync.note">Sync is automatic. Your GitHub access stays secret on the server — nothing to copy on this device.</div>
       <p class="hint-line" id="sync-detail"></p>
     </section>
 

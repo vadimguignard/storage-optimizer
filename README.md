@@ -53,17 +53,18 @@ The site is static, but the data is versioned in GitHub:
 
 - `main` holds the code and is published with GitHub Pages.
 - `sync` holds `data/store.json`, the live shared dataset.
-- The web app reads **and** writes it through the GitHub Contents API with the device token. The public `raw.githubusercontent.com` URL is deliberately not used because it can serve a cached copy for up to 5 minutes.
+- The web app reads **and** writes through a small Cloudflare Worker (`worker/`). The Worker holds the GitHub token as a Cloudflare secret and adds the `Authorization` header server-side; the browser never receives the token. The public `raw.githubusercontent.com` URL is deliberately not used because it can serve a cached copy for up to 5 minutes.
 - Confirming an item or box form saves locally and **pushes to GitHub immediately** (no delay, no button to click), with a **“GitHub updated — all devices will see this change.”** toast. Deletions follow the same path.
 - Other devices check for new data every **2 seconds** (and on load / tab focus) using conditional requests, so the new item appears in their lists and on the Home summary almost instantly — still no manual sync action. They show a **“New data downloaded from GitHub.”** toast when it arrives.
+- Sync is **on by default on every device**: no token field, no copy/paste, no setup.
 
-Setup:
+One-time setup (done by the site owner, not by each device):
 
-1. Create a fine-grained personal access token with **read/write access to repository contents** for `vadimguignard/storage-optimizer`.
-2. Open **Home → Sync across devices** on each device, fill in the owner (`vadimguignard`), repository (`storage-optimizer`), branch (`sync`) and token, then click **Enable sync**.
-3. On the phone, enter the same values. Its data is replaced by the newest version from GitHub, and future changes on either device propagate to the other.
+1. In `worker/`, run `npx wrangler login`, then `npx wrangler secret put GITHUB_TOKEN` (paste the token once — it goes to Cloudflare, not to the repository), then `npx wrangler deploy`.
+2. Put the deployed `https://…workers.dev` URL into `PROXY_URL` at the top of `js/sync.js`, then commit and push to `main`.
+3. Every device now syncs automatically just by opening the site.
 
-**The token is never embedded in the site.** It is kept only in the `localStorage` of the browser where you entered it, and is sent only to `api.github.com`. Do not commit it to the repository.
+**The token is never in the repository, never in the site, and never in any browser.** It exists only as the Cloudflare secret `GITHUB_TOKEN`. The Worker accepts only requests from the GitHub Pages origin (plus local dev origins), and the token can be revoked at any time from GitHub or Cloudflare.
 
 If the `sync` branch does not exist yet, create it from `main` and add `data/store.json`:
 
@@ -89,7 +90,7 @@ If the `sync` branch does not exist yet, create it from `main` and add `data/sto
 │   ├── app.js            Navigation, language selector, modals, toasts, import/export, sync UI
 │   ├── i18n.js           English/French dictionaries and helpers
 │   ├── data.js           localStorage repository + seeding from data/*.json
-│   ├── sync.js           GitHub Contents API read/write and polling
+│   ├── sync.js           Calls the Worker proxy, applies remote data, polls every 2 s
 │   ├── objects.js        Item page logic
 │   ├── containers.js     Box page logic
 │   ├── geometry.js       Units, dimension estimation, rotations, bounds, collisions
@@ -97,6 +98,7 @@ If the `sync` branch does not exist yet, create it from `main` and add `data/sto
 │   ├── viewer3d.js       Three.js rendering
 │   └── simulator.js      Simulator orchestration
 ├── data/                 Initial JSON datasets (empty by default)
+├── worker/               Cloudflare Worker proxy (token stored as a Cloudflare secret)
 ├── tests/                Node tests (node:test)
 ├── assets/vendor/        Local Three.js build
 └── server.js             Optional static server

@@ -1,0 +1,9 @@
+{
+  "name": "storage-optimizer-sync-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "secret": "wrangler secret put GITHUB_TOKEN"
+  }
+}

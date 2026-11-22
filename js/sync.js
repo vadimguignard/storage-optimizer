@@ -1,15 +1,16 @@
 /*
- * sync.js — synchronisation via l'API GitHub Contents.
+ * sync.js — synchronisation via un Cloudflare Worker.
  * Le code reste sur `main` (GitHub Pages) ; les données vivent dans une branche séparée.
- * Chaque appareil saisit son propre jeton, stocké uniquement dans son navigateur.
- * La lecture passe par l'API (et non par raw.githubusercontent.com, mis en cache 5 min).
+ * Le token GitHub est stocké UNIQUEMENT comme secret Cloudflare. Le navigateur
+ * n'a aucun token à saisir : il appelle ce proxy, qui ajoute l'autorisation côté serveur.
  */
 (function (root) {
   'use strict';
   const SO = root.SO = root.SO || {};
   const CONFIG_KEY = 'so.sync.config.v1';
   const STATE_KEY = 'so.sync.state.v1';
-  const DATA_PATH = 'data/store.json';
+  // Public Worker URL. The GitHub token is a Cloudflare secret, never stored here.
+  const PROXY_URL = 'https://storage-optimizer-sync.vadim-guignard.workers.dev';
   // Short interval so a change made on one device appears almost immediately on the others.
   // Conditional GETs (ETag) keep this cheap and below GitHub's rate limit.
   const POLL_MS = 2000;
@@ -28,7 +29,13 @@
     } catch (e) { return fallback; }
   }
 
-  let config = readJSON(CONFIG_KEY, null);
+  // Auto-enabled: no token, no setup. A stored opt-out ({ enabled: false }) is respected.
+  let config = readJSON(CONFIG_KEY, { enabled: true });
+  if (!config) config = { enabled: true };
+  if (config.token || config.owner || config.repo || config.branch) {
+    // Remove credentials/old settings left by the previous version.
+    config = { enabled: config.enabled !== false };
+  }
   let state = Object.assign({ sha: null, etag: null, lastUpdatedAt: 0, deviceId: null }, readJSON(STATE_KEY, {}));
   if (!state.deviceId) state.deviceId = Math.random().toString(36).slice(2, 10);
   let applyingRemote = false;
@@ -41,22 +48,22 @@
   function saveConfig() { store.setItem(CONFIG_KEY, JSON.stringify(config)); }
   function saveState() { store.setItem(STATE_KEY, JSON.stringify(state)); }
 
+  // Persist the credential-free config (and migrate old token-based config).
+  saveConfig();
+
   function emit(status, extra) {
     lastStatus = Object.assign({ status }, extra || {});
     listeners.forEach(fn => { try { fn(lastStatus); } catch (e) { /* ignore */ } });
   }
 
   function apiUrl() {
-    return `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${DATA_PATH}?ref=${encodeURIComponent(config.branch)}`;
+    return PROXY_URL;
   }
 
   function headers(extra) {
     const result = {
-      Authorization: `Bearer ${config.token}`,
       Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      'Content-Type': 'application/json',
-      'User-Agent': 'storage-optimizer'
+      'Content-Type': 'application/json'
     };
     // Conditional GET: a 304 response does not consume the GitHub API rate limit.
     if (extra && extra.ifNoneMatch) result['If-None-Match'] = extra.ifNoneMatch;
@@ -95,8 +102,8 @@
     };
   }
 
-  function isEnabled() { return !!(config && config.enabled && config.token); }
-  function getConfig() { return config ? Object.assign({}, config) : null; }
+  function isEnabled() { return !!(config && config.enabled); }
+  function getConfig() { return { enabled: isEnabled() }; }
   function getStatus() { return lastStatus; }
   function onStatus(fn) { listeners.push(fn); fn(lastStatus); return () => {
     const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1);
@@ -231,8 +238,8 @@
     pollTimer = setInterval(() => { pull(true).catch(() => {}); }, POLL_MS);
   }
 
-  function enable(next) {
-    config = Object.assign({}, next, { branch: next.branch || 'sync', enabled: true });
+  function enable() {
+    config = { enabled: true };
     state.sha = null;
     state.etag = null;
     state.lastUpdatedAt = 0;
@@ -242,8 +249,8 @@
   }
 
   function disable() {
-    config = null;
-    store.removeItem(CONFIG_KEY);
+    config = { enabled: false };
+    saveConfig();
     clearInterval(pollTimer);
     emit('disabled');
   }
