@@ -1,7 +1,8 @@
 /*
- * sync.js — synchronisation du dépôt de données via l'API GitHub.
+ * sync.js — synchronisation via l'API GitHub Contents.
  * Le code reste sur `main` (GitHub Pages) ; les données vivent dans une branche séparée.
  * Chaque appareil saisit son propre jeton, stocké uniquement dans son navigateur.
+ * La lecture passe par l'API (et non par raw.githubusercontent.com, mis en cache 5 min).
  */
 (function (root) {
   'use strict';
@@ -46,16 +47,13 @@
     return `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${DATA_PATH}?ref=${encodeURIComponent(config.branch)}`;
   }
 
-  function rawUrl() {
-    return `https://raw.githubusercontent.com/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/${encodeURIComponent(config.branch)}/${DATA_PATH}?t=${Date.now()}`;
-  }
-
   function headers() {
     return {
       Authorization: `Bearer ${config.token}`,
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'User-Agent': 'storage-optimizer'
     };
   }
 
@@ -66,6 +64,13 @@
       binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
     }
     return btoa(binary);
+  }
+
+  function decodeBase64(text) {
+    const binary = atob(String(text).replace(/\s/g, ''));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
   }
 
   function payload() {
@@ -86,32 +91,39 @@
     const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1);
   }; }
 
-  /** Download the remote store and apply it when it is newer. */
+  /** Resolve two-dimension records that may come from an older payload. */
+  function normalizeList(list, isContainer) {
+    return (Array.isArray(list) ? list : []).map(raw => {
+      try {
+        const type = isContainer ? 'box' : (raw.type === 'cylinder' ? 'cylinder' : 'box');
+        const resolved = SO.resolveDimensions(raw.dimensions, type);
+        return Object.assign({}, raw, { dimensions: resolved.values, estimated: resolved.estimated });
+      } catch (e) { return raw; }
+    });
+  }
+
+  /** Download the remote store via the Contents API and apply it when newer. */
   async function pull() {
     if (!isEnabled()) return { changed: false };
     emit('syncing');
     try {
-      const response = await fetch(rawUrl(), { cache: 'no-store' });
+      const response = await fetch(apiUrl(), { headers: headers(), cache: 'no-store' });
       if (response.status === 404) { emit('synced'); return { changed: false, missing: true }; }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const remote = await response.json();
+      const file = await response.json();
+      if (!file.content) throw new Error('missing content');
+      const remote = JSON.parse(decodeBase64(file.content));
       if (!remote || !Array.isArray(remote.objects)) throw new Error('invalid payload');
+
+      if (file.sha) { state.sha = file.sha; saveState(); }
       const updatedAt = Number(remote.updatedAt) || 0;
       if (state.lastUpdatedAt && updatedAt <= state.lastUpdatedAt) {
         emit('synced', { time: state.lastUpdatedAt });
         return { changed: false };
       }
-      // Older payloads may contain only two dimensions: resolve them on arrival.
-      const normalize = (list, isContainer) => (Array.isArray(list) ? list : []).map(raw => {
-        try {
-          const type = isContainer ? 'box' : (raw.type === 'cylinder' ? 'cylinder' : 'box');
-          const resolved = SO.resolveDimensions(raw.dimensions, type);
-          return Object.assign({}, raw, { dimensions: resolved.values, estimated: resolved.estimated });
-        } catch (e) { return raw; }
-      });
       applyingRemote = true;
-      SO.data.saveObjects(normalize(remote.objects, false));
-      SO.data.saveContainers(normalize(remote.containers, true));
+      SO.data.saveObjects(normalizeList(remote.objects, false));
+      SO.data.saveContainers(normalizeList(remote.containers, true));
       state.lastUpdatedAt = updatedAt;
       saveState();
       setTimeout(() => { applyingRemote = false; }, 0);
@@ -131,7 +143,7 @@
     try {
       let sha = state.sha;
       if (!sha) {
-        const current = await fetch(apiUrl(), { headers: headers() });
+        const current = await fetch(apiUrl(), { headers: headers(), cache: 'no-store' });
         if (current.ok) {
           const json = await current.json();
           sha = json.sha || null;
@@ -145,7 +157,9 @@
         branch: config.branch
       };
       if (sha) body.sha = sha;
-      const response = await fetch(apiUrl(), { method: 'PUT', headers: headers(), body: JSON.stringify(body) });
+      const response = await fetch(apiUrl().split('?')[0], {
+        method: 'PUT', headers: headers(), body: JSON.stringify(body)
+      });
       if (response.status === 409 && !retry) {
         state.sha = null; saveState();
         return push(true);
@@ -178,6 +192,7 @@
   function enable(next) {
     config = Object.assign({}, next, { branch: next.branch || 'sync', enabled: true });
     state.sha = null;
+    state.lastUpdatedAt = 0;
     saveConfig(); saveState();
     startPolling();
     return pull().catch(() => {}).then(() => push());

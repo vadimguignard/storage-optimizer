@@ -53,7 +53,7 @@ The site is static, but the data is versioned in GitHub:
 
 - `main` holds the code and is published with GitHub Pages.
 - `sync` holds `data/store.json`, the live shared dataset.
-- The web app reads it from the public raw URL and writes it through the GitHub Contents API.
+- The web app reads **and** writes it through the GitHub Contents API with the device token. The public `raw.githubusercontent.com` URL is deliberately not used because it can serve a cached copy for up to 5 minutes.
 - Every 20 seconds, and each time you return to the tab, the app checks for newer data. Any local change is pushed automatically a moment later.
 
 Setup:
