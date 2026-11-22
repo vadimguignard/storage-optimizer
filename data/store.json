@@ -1,24 +1,8 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 1795347145846,
+  "updatedAt": 1795347153818,
   "deviceId": "ya4luoqi",
-  "objects": [
-    {
-      "id": "item-mwrrbrjd-bjyg",
-      "name": "Sync test lamp",
-      "type": "box",
-      "dimensions": {
-        "length": 30,
-        "width": 30,
-        "height": 45
-      },
-      "unit": "cm",
-      "rotations": "allowed",
-      "quantity": 1,
-      "color": "#3b82f6",
-      "estimated": []
-    }
-  ],
+  "objects": [],
   "containers": []
 }
