@@ -1,8 +1,24 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 1795347075920,
+  "updatedAt": 1795347093648,
   "deviceId": "ya4luoqi",
-  "objects": [],
+  "objects": [
+    {
+      "id": "item-mwrraywd-bp0l",
+      "name": "Sync test chair",
+      "type": "box",
+      "dimensions": {
+        "length": 60,
+        "width": 50,
+        "height": 80
+      },
+      "unit": "cm",
+      "rotations": "allowed",
+      "quantity": 1,
+      "color": "#3b82f6",
+      "estimated": []
+    }
+  ],
   "containers": []
 }
