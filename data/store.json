@@ -1,24 +1,8 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 1795347776050,
+  "updatedAt": 1795347819495,
   "deviceId": "k01v8p97",
-  "objects": [
-    {
-      "id": "item-mwrrplwx-ncu6",
-      "name": "Instant sync test",
-      "type": "box",
-      "dimensions": {
-        "length": 40,
-        "width": 40,
-        "height": 60
-      },
-      "unit": "cm",
-      "rotations": "allowed",
-      "quantity": 1,
-      "color": "#3b82f6",
-      "estimated": []
-    }
-  ],
+  "objects": [],
   "containers": []
 }
