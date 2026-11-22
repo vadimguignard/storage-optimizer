@@ -1,24 +1,8 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 1795350658201,
+  "updatedAt": 1795350724287,
   "deviceId": "j7fgyzql",
-  "objects": [
-    {
-      "id": "item-mwrtfdso-ez0e",
-      "name": "Proxy sync test",
-      "type": "box",
-      "dimensions": {
-        "length": 40,
-        "width": 40,
-        "height": 60
-      },
-      "unit": "cm",
-      "rotations": "allowed",
-      "quantity": 1,
-      "color": "#3b82f6",
-      "estimated": []
-    }
-  ],
+  "objects": [],
   "containers": []
 }
