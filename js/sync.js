@@ -136,7 +136,7 @@
   }
 
   /** Upload the local store to the data branch. */
-  async function push(retry) {
+  async function push(retry, notify) {
     if (!isEnabled()) return;
     emit('syncing');
     const data = payload();
@@ -162,7 +162,7 @@
       });
       if (response.status === 409 && !retry) {
         state.sha = null; saveState();
-        return push(true);
+        return push(true, notify);
       }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const json = await response.json();
@@ -170,6 +170,9 @@
       state.lastUpdatedAt = data.updatedAt;
       saveState();
       emit('synced', { time: data.updatedAt });
+      if (notify && root.SO.ui && root.SO.i18n) {
+        root.SO.ui.toast(root.SO.i18n.t('sync.pushed'), 'success');
+      }
     } catch (e) {
       emit('error', { message: e.message });
       if (root.SO.ui) root.SO.ui.toast(root.SO.i18n.t('sync.pushFailed', { msg: e.message }), 'error');
@@ -180,7 +183,7 @@
     if (!isEnabled() || applyingRemote) return;
     clearTimeout(pushTimer);
     emit('syncing');
-    pushTimer = setTimeout(() => push(), 600);
+    pushTimer = setTimeout(() => push(false, true), 600);
   }
 
   function startPolling() {
@@ -195,7 +198,7 @@
     state.lastUpdatedAt = 0;
     saveConfig(); saveState();
     startPolling();
-    return pull().catch(() => {}).then(() => push());
+    return pull().catch(() => {}).then(() => push(false, false));
   }
 
   function disable() {
@@ -210,7 +213,7 @@
     if (!isEnabled()) return;
     try {
       const result = await pull();
-      await push();
+      await push(false, false);
       return result;
     } catch (e) {
       if (root.SO.ui) root.SO.ui.toast(root.SO.i18n.t('sync.pullFailed'), 'error');
@@ -226,7 +229,11 @@
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && isEnabled()) pull().catch(() => {});
     });
-    if (config && config.enabled) startPolling();
+    if (config && config.enabled) {
+      startPolling();
+      // Check immediately on load instead of waiting for the first 20 s tick.
+      pull().catch(() => {});
+    }
   }
 
   SO.sync = { enable, disable, syncNow, pull, push, isEnabled, getConfig, getStatus, onStatus };
