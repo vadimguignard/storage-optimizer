@@ -1,7 +1,8 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 0,
+  "updatedAt": 1795346149280,
+  "deviceId": "sync-verification",
   "objects": [],
   "containers": []
 }
