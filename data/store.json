@@ -1,8 +1,24 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 1795350831238,
-  "deviceId": "1i5k0mp6",
-  "objects": [],
+  "updatedAt": 1795351083454,
+  "deviceId": "ggy2mwo7",
+  "objects": [
+    {
+      "id": "item-mwrtohx6-9lqy",
+      "name": "1",
+      "type": "box",
+      "dimensions": {
+        "length": 1,
+        "width": 1,
+        "height": 1
+      },
+      "unit": "cm",
+      "rotations": "allowed",
+      "quantity": 1,
+      "color": "#3b82f6",
+      "estimated": []
+    }
+  ],
   "containers": []
 }
