@@ -74,6 +74,10 @@ test('sync reads the API, resolves missing dimensions and pushes back with the s
   assert.deepEqual(uploaded.objects, stored.objects);
   assert.ok(uploaded.updatedAt > 0);
   assert.equal(global.SO.sync.getStatus().status, 'synced');
+
+  await global.SO.sync.pull(true);
+  const lastGet = calls.filter(c => !(c.options && c.options.method === 'PUT')).at(-1);
+  assert.equal(lastGet.options.headers['If-None-Match'], '"new-sha"', 'polls use the sha as ETag to get cheap 304 responses');
 });
 
 test('sync accepts only two dimensions in the uploaded payload', () => {

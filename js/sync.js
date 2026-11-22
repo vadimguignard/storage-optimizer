@@ -144,7 +144,8 @@
       if (!remote || !Array.isArray(remote.objects)) throw new Error('invalid payload');
 
       if (file.sha) state.sha = file.sha;
-      state.etag = responseEtag(response);
+      // The proxy may not expose GitHub's ETag header; GitHub accepts the file sha as one.
+      state.etag = responseEtag(response) || (file.sha ? `"${file.sha}"` : null);
       saveState();
       const updatedAt = Number(remote.updatedAt) || 0;
       if (state.lastUpdatedAt && updatedAt <= state.lastUpdatedAt) {
@@ -203,7 +204,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const json = await response.json();
       state.sha = (json.content && json.content.sha) || sha;
-      state.etag = responseEtag(response);
+      state.etag = responseEtag(response) || (state.sha ? `"${state.sha}"` : null);
       state.lastUpdatedAt = data.updatedAt;
       saveState();
       emit('synced', { time: data.updatedAt });
