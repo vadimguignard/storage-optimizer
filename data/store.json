@@ -1,7 +1,7 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 1795419409850,
+  "updatedAt": 1795419467653,
   "deviceId": "3t4j06n7",
   "objects": [
     {
@@ -61,6 +61,20 @@
       "rotations": "allowed",
       "quantity": 1,
       "color": "#d4480c",
+      "estimated": []
+    },
+    {
+      "id": "item-mwsye7ic-tdoe",
+      "name": "ventialdor",
+      "type": "cylinder",
+      "dimensions": {
+        "diameter": 43,
+        "height": 145
+      },
+      "unit": "cm",
+      "rotations": "allowed",
+      "quantity": 1,
+      "color": "#3b82f6",
       "estimated": []
     }
   ],
