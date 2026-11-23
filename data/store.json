@@ -1,7 +1,7 @@
 {
   "app": "storage-optimizer",
   "version": 1,
-  "updatedAt": 1795419386305,
+  "updatedAt": 1795419409850,
   "deviceId": "3t4j06n7",
   "objects": [
     {
@@ -47,6 +47,20 @@
       "rotations": "allowed",
       "quantity": 1,
       "color": "#3b82f6",
+      "estimated": []
+    },
+    {
+      "id": "item-mwsycywq-gqkq",
+      "name": "smal table mama",
+      "type": "cylinder",
+      "dimensions": {
+        "diameter": 40,
+        "height": 55
+      },
+      "unit": "cm",
+      "rotations": "allowed",
+      "quantity": 1,
+      "color": "#d4480c",
       "estimated": []
     }
   ],
